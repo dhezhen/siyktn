@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +11,12 @@ use Illuminate\Support\Facades\Cache;
 
 class Menu extends Model
 {
+    use RecordsActivity;
+
+    protected array $activityFields = ['title', 'type', 'route', 'url', 'permission', 'parent_id', 'is_active'];
+
+    protected string $activityLabel = 'Menu';
+
     public const CACHE_KEY = 'menus.tree';
 
     protected $fillable = [

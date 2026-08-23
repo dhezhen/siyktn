@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Schema;
@@ -15,6 +16,12 @@ use Throwable;
  */
 class Setting extends Model
 {
+    use RecordsActivity;
+
+    protected array $activityFields = ['value'];
+
+    protected string $activityLabel = 'Pengaturan';
+
     public const CACHE_KEY = 'settings.all';
 
     protected $fillable = ['key', 'value', 'type', 'group', 'label'];
