@@ -25,6 +25,7 @@ return [
         'export' => 'Ekspor',
         'import' => 'Impor',
         'reset-password' => 'Reset Sandi',
+        'approve' => 'Verifikasi',
     ],
 
     'modules' => [
@@ -61,7 +62,7 @@ return [
         'peserta' => [
             'label' => 'Peserta',
             'group' => 'Data Tahfidz',
-            'actions' => ['view', 'create', 'update', 'delete', 'export', 'import'],
+            'actions' => ['view', 'create', 'update', 'delete', 'export', 'import', 'approve'],
         ],
     ],
 

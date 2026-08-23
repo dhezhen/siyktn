@@ -28,6 +28,21 @@
             <option value="L">Laki-laki</option>
             <option value="P">Perempuan</option>
         </select>
+
+        <select wire:model.live="statusPendaftaran"
+                class="rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
+            <option value="">Semua status pendaftaran</option>
+            <option value="menunggu">Menunggu verifikasi</option>
+            <option value="disetujui">Disetujui</option>
+            <option value="ditolak">Ditolak</option>
+        </select>
+
+        <select wire:model.live="sumber"
+                class="rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
+            <option value="">Semua sumber</option>
+            <option value="mandiri">Pendaftaran mandiri</option>
+            <option value="admin">Input petugas</option>
+        </select>
     </div>
 
     <div class="mb-3 flex items-center justify-between gap-2">
@@ -70,7 +85,8 @@
                                     <div class="min-w-0">
                                         <p class="truncate font-medium text-slate-900">{{ $item->nama }}</p>
                                         <p class="truncate text-xs text-slate-500">
-                                            {{ $item->nomor_induk }} &middot; {{ $item->jenis_kelamin_label }}
+                                            {{ $item->nomor_induk ?: $item->kode_pendaftaran ?: '—' }}
+                                            &middot; {{ $item->jenis_kelamin_label }}
                                         </p>
                                     </div>
                                 </div>
@@ -89,7 +105,14 @@
                             </td>
 
                             <td class="px-5 py-3">
-                                <x-badge :color="$item->status_color">{{ Str::title($item->status) }}</x-badge>
+                                <div class="flex flex-col items-start gap-1">
+                                    <x-badge :color="$item->status_color">{{ Str::title($item->status) }}</x-badge>
+                                    @if ($item->status_pendaftaran !== 'disetujui')
+                                        <x-badge :color="$item->status_pendaftaran_color">
+                                            {{ $item->status_pendaftaran_label }}
+                                        </x-badge>
+                                    @endif
+                                </div>
                             </td>
 
                             <td class="px-5 py-3">

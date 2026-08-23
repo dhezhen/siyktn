@@ -23,4 +23,12 @@
 
         <x-button type="submit" class="w-full">Masuk</x-button>
     </form>
+
+    <div class="mt-5 border-t border-slate-100 pt-4 text-center">
+        <p class="text-sm text-slate-600">Calon peserta baru?</p>
+        <a href="{{ route('pendaftaran.create') }}"
+           class="mt-1 inline-block text-sm font-medium text-emerald-700 hover:underline">
+            Daftar mandiri di sini
+        </a>
+    </div>
 </x-layouts::guest>

@@ -8,12 +8,27 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\PendaftaranAdminController;
+use App\Http\Controllers\PendaftaranController;
 use App\Http\Controllers\PesertaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Publik — pendaftaran mandiri peserta
+|--------------------------------------------------------------------------
+| Terbuka tanpa login. Pengiriman formulir dibatasi agar tidak bisa dibanjiri
+| kiriman berulang dari satu sumber.
+*/
+Route::get('/pendaftaran', [PendaftaranController::class, 'create'])->name('pendaftaran.create');
+Route::post('/pendaftaran', [PendaftaranController::class, 'store'])
+    ->middleware('throttle:5,10')
+    ->name('pendaftaran.store');
+Route::get('/pendaftaran/terkirim', [PendaftaranController::class, 'sukses'])->name('pendaftaran.sukses');
 
 /*
 |--------------------------------------------------------------------------
@@ -78,6 +93,12 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
 
     Route::get('peserta/ekspor', [PesertaController::class, 'export'])->name('peserta.export');
     Route::resource('peserta', PesertaController::class)->parameters(['peserta' => 'peserta']);
+
+    // Peninjauan pendaftaran
+    Route::get('pendaftaran-masuk', [PendaftaranAdminController::class, 'index'])->name('pendaftaran.index');
+    Route::post('pendaftaran-masuk/{peserta}/setujui', [PendaftaranAdminController::class, 'setujui'])->name('pendaftaran.setujui');
+    Route::post('pendaftaran-masuk/{peserta}/tolak', [PendaftaranAdminController::class, 'tolak'])->name('pendaftaran.tolak');
+    Route::get('pendaftaran-masuk/{peserta}/ktp', [PendaftaranAdminController::class, 'ktp'])->name('pendaftaran.ktp');
 
     /*
      | Pengaturan sistem

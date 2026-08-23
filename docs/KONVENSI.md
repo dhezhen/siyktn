@@ -100,10 +100,54 @@ Akun bawaan (kata sandi semua: `password`):
 | 4 | Manajemen menu dinamis (drag & drop) | ✅ |
 | 5 | Log aktivitas, pengaturan aplikasi, dashboard | ✅ |
 | 6 | Modul pertama: Angkatan & Peserta | ✅ |
+| 7 | Pendaftaran mandiri peserta + verifikasi + email | ✅ |
+
+## Pendaftaran peserta
+
+Alur lengkapnya:
+
+1. Calon peserta membuka **`/pendaftaran`** (publik, tanpa login), mengisi data
+   dan melampirkan KTP.
+2. Sistem membuat kode tanda terima `REG-{tahun}-{urut}` dan mengirim email:
+   satu ke pendaftar, satu ke tiap petugas pemilik permission `peserta.approve`
+   (plus seluruh super admin), dan salinan ke *Email Resmi* di Pengaturan Aplikasi
+   bila kolomnya diisi.
+3. Petugas meninjau di **Pendaftaran** (`/pendaftaran-masuk`), membuka berkas KTP,
+   lalu **Setujui** atau **Tolak**.
+4. Disetujui &rarr; nomor induk dibuat otomatis, status jadi aktif, pendaftar
+   dikabari lewat email.
+   Ditolak &rarr; alasan penolakan wajib diisi dan ikut dikirim ke pendaftar.
+
+Peserta yang diinput petugas lewat **Peserta &rarr; Tambah** melewati alur yang
+sama (`PendaftaranService::daftarkan`), hanya saja langsung berstatus disetujui —
+sehingga emailnya tetap terkirim.
+
+### Berkas KTP
+
+KTP disimpan di disk **`local`** (`storage/app/private/ktp`), **bukan** `public`.
+Berkas hanya bisa dibuka lewat route `pendaftaran.ktp` yang dijaga permission
+`peserta.view`. Jangan pernah memindahkannya ke `storage/app/public` — folder itu
+ter-symlink ke `public/` dan isinya bisa diakses siapa saja yang menebak URL-nya.
+
+### Email
+
+Notifikasi memakai `ShouldQueue`, jadi pengiriman tidak menahan proses simpan.
+
+| Lingkungan | `QUEUE_CONNECTION` | Yang perlu dijalankan |
+|---|---|---|
+| Lokal | `sync` | tidak ada — email langsung terkirim |
+| Server | `database` | `php artisan queue:work` (pakai Supervisor) |
+
+`MAIL_MAILER=log` menulis email ke `storage/logs/laravel.log`, berguna untuk
+menguji tanpa SMTP. Ganti ke `smtp` beserta kredensialnya sebelum dipakai sungguhan.
+
+Kegagalan kirim email **tidak** menggagalkan pendaftaran — datanya tetap
+tersimpan dan errornya dicatat di log.
 
 ### Belum dikerjakan (kandidat sprint berikutnya)
 
 - Impor CSV untuk peserta (ekspor sudah ada).
+- Halaman cek status pendaftaran mandiri memakai kode `REG-…`.
 - Cetak PDF (kartu peserta, rekap angkatan) — perlu `barryvdh/laravel-dompdf`.
 - 2FA dan riwayat login per perangkat.
 - Backup database terjadwal (`spatie/laravel-backup`).

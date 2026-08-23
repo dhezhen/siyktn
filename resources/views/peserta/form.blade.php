@@ -37,6 +37,13 @@
 
                             <x-input name="nama" label="Nama Lengkap" required :value="old('nama', $peserta->nama)" />
 
+                            <x-input name="nik" label="NIK" :value="old('nik', $peserta->nik)"
+                                     inputmode="numeric" maxlength="16" placeholder="16 digit sesuai KTP" />
+
+                            <x-input name="email" type="email" label="Email" :value="old('email', $peserta->email)"
+                                     placeholder="nama@contoh.id"
+                                     hint="Bila diisi, peserta menerima email pemberitahuan pendaftaran." />
+
                             <x-select name="jenis_kelamin" label="Jenis Kelamin" required>
                                 <option value="L" @selected(old('jenis_kelamin', $peserta->jenis_kelamin) === 'L')>Laki-laki</option>
                                 <option value="P" @selected(old('jenis_kelamin', $peserta->jenis_kelamin) === 'P')>Perempuan</option>
@@ -88,12 +95,46 @@
                         </div>
                     </x-card>
 
+                    <x-card title="Berkas KTP">
+                        @if ($peserta->ktp_path)
+                            <p class="mb-3 flex items-center gap-2 text-sm text-slate-600">
+                                <x-icon name="check-circle" class="size-4 text-emerald-600" />
+                                Berkas sudah dilampirkan.
+                            </p>
+                            <x-button :href="route('pendaftaran.ktp', $peserta)" variant="secondary" size="sm"
+                                      target="_blank" class="mb-3 w-full">
+                                Lihat KTP Terlampir
+                            </x-button>
+                        @endif
+
+                        <x-input name="ktp" type="file" :label="$peserta->ktp_path ? 'Ganti Berkas' : 'Unggah KTP'"
+                                 accept=".jpg,.jpeg,.png,.pdf"
+                                 hint="JPG, PNG, atau PDF. Maksimal 2 MB. Disimpan tertutup, tidak dapat diakses publik." />
+                    </x-card>
+
                     <x-card title="Status">
                         <x-select name="status" label="Status Keikutsertaan" required>
                             @foreach (['aktif' => 'Aktif', 'lulus' => 'Lulus', 'keluar' => 'Keluar'] as $value => $label)
                                 <option value="{{ $value }}" @selected(old('status', $peserta->status) === $value)>{{ $label }}</option>
                             @endforeach
                         </x-select>
+
+                        @if ($editing)
+                            <div class="mt-4 border-t border-slate-100 pt-4">
+                                <p class="text-xs text-slate-500">Status pendaftaran</p>
+                                <div class="mt-1">
+                                    <x-badge :color="$peserta->status_pendaftaran_color">
+                                        {{ $peserta->status_pendaftaran_label }}
+                                    </x-badge>
+                                </div>
+                                @if ($peserta->isMenunggu())
+                                    <p class="mt-2 text-xs text-slate-500">
+                                        Setujui atau tolak lewat halaman
+                                        <a href="{{ route('pendaftaran.index') }}" class="text-emerald-700 hover:underline">Pendaftaran</a>.
+                                    </p>
+                                @endif
+                            </div>
+                        @endif
                     </x-card>
                 </div>
             </div>

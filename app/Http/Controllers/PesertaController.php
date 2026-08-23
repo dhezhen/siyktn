@@ -8,6 +8,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use App\Services\PendaftaranService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -15,6 +17,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PesertaController extends Controller implements HasMiddleware
 {
+    public function __construct(protected PendaftaranService $pendaftaran) {}
+
     public static function middleware(): array
     {
         return [
@@ -33,7 +37,7 @@ class PesertaController extends Controller implements HasMiddleware
 
     public function show(Peserta $peserta): View
     {
-        $peserta->load('angkatan');
+        $peserta->load(['angkatan', 'peninjau:id,name']);
 
         return view('peserta.show', ['peserta' => $peserta]);
     }
@@ -61,7 +65,20 @@ class PesertaController extends Controller implements HasMiddleware
             $data['nomor_induk'] = Peserta::nomorIndukBerikutnya(Angkatan::findOrFail($data['angkatan_id']));
         }
 
-        $peserta = Peserta::create($data);
+        if ($request->hasFile('ktp')) {
+            $data['ktp_path'] = $this->pendaftaran->simpanKtp($request->file('ktp'));
+        }
+
+        unset($data['foto'], $data['ktp']);
+
+        // Peserta yang diinput petugas dianggap sudah terverifikasi, tetapi
+        // tetap melewati alur yang sama agar emailnya ikut terkirim.
+        $peserta = $this->pendaftaran->daftarkan(array_merge($data, [
+            'status_pendaftaran' => 'disetujui',
+            'ditinjau_pada' => now(),
+            'ditinjau_oleh' => Auth::id(),
+        ]), sumber: 'admin');
+
         $this->storeFoto($request, $peserta);
 
         return redirect()->route('peserta.index')
@@ -78,7 +95,18 @@ class PesertaController extends Controller implements HasMiddleware
 
     public function update(Request $request, Peserta $peserta): RedirectResponse
     {
-        $peserta->update($this->validated($request, $peserta));
+        $data = $this->validated($request, $peserta);
+
+        if ($request->hasFile('ktp')) {
+            $this->pendaftaran->hapusKtp($peserta->ktp_path);
+            $data['ktp_path'] = $this->pendaftaran->simpanKtp($request->file('ktp'));
+        }
+
+        // Berkas ditangani terpisah — jangan sampai objek file ikut disimpan
+        // ke kolom teks.
+        unset($data['foto'], $data['ktp']);
+
+        $peserta->update($data);
         $this->storeFoto($request, $peserta);
 
         return redirect()->route('peserta.index')
@@ -103,8 +131,9 @@ class PesertaController extends Controller implements HasMiddleware
 
             fwrite($handle, "\xEF\xBB\xBF");
             fputcsv($handle, [
-                'Nomor Induk', 'Nama', 'Jenis Kelamin', 'Angkatan', 'Tempat Lahir',
-                'Tanggal Lahir', 'No HP', 'Nama Wali', 'No HP Wali', 'Tanggal Masuk', 'Status',
+                'Kode Pendaftaran', 'Nomor Induk', 'Nama', 'NIK', 'Jenis Kelamin', 'Angkatan',
+                'Tempat Lahir', 'Tanggal Lahir', 'No HP', 'Email', 'Nama Wali', 'No HP Wali',
+                'Tanggal Masuk', 'Status', 'Status Pendaftaran', 'Sumber', 'Didaftarkan Pada',
             ]);
 
             Peserta::with('angkatan:id,nama')
@@ -113,17 +142,23 @@ class PesertaController extends Controller implements HasMiddleware
                 ->chunk(500, function ($rows) use ($handle) {
                     foreach ($rows as $peserta) {
                         fputcsv($handle, [
+                            $peserta->kode_pendaftaran,
                             $peserta->nomor_induk,
                             $peserta->nama,
+                            $peserta->nik,
                             $peserta->jenis_kelamin_label,
                             $peserta->angkatan?->nama,
                             $peserta->tempat_lahir,
                             $peserta->tanggal_lahir?->format('Y-m-d'),
                             $peserta->no_hp,
+                            $peserta->email,
                             $peserta->nama_wali,
                             $peserta->no_hp_wali,
                             $peserta->tanggal_masuk?->format('Y-m-d'),
                             $peserta->status,
+                            $peserta->status_pendaftaran,
+                            $peserta->sumber_pendaftaran,
+                            $peserta->didaftarkan_pada?->format('Y-m-d H:i'),
                         ]);
                     }
                 });
@@ -144,6 +179,8 @@ class PesertaController extends Controller implements HasMiddleware
                 Rule::unique('peserta', 'nomor_induk')->ignore($peserta?->id),
             ],
             'nama' => ['required', 'string', 'max:100'],
+            'nik' => ['nullable', 'digits:16', Rule::unique('peserta', 'nik')->ignore($peserta?->id)],
+            'email' => ['nullable', 'email', 'max:150'],
             'jenis_kelamin' => ['required', Rule::in(['L', 'P'])],
             'tempat_lahir' => ['nullable', 'string', 'max:80'],
             'tanggal_lahir' => ['nullable', 'date', 'before:today'],
@@ -154,7 +191,9 @@ class PesertaController extends Controller implements HasMiddleware
             'tanggal_masuk' => ['nullable', 'date'],
             'status' => ['required', Rule::in(['aktif', 'lulus', 'keluar'])],
             'foto' => ['nullable', 'image', 'max:2048'],
+            'ktp' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
         ], [
+            'nik.digits' => 'NIK harus terdiri dari 16 angka.',
             'tanggal_lahir.before' => 'Tanggal lahir harus sebelum hari ini.',
         ], [
             'angkatan_id' => 'angkatan',
@@ -168,6 +207,9 @@ class PesertaController extends Controller implements HasMiddleware
             'no_hp_wali' => 'nomor HP wali',
             'tanggal_masuk' => 'tanggal masuk',
             'foto' => 'foto',
+            'nik' => 'NIK',
+            'email' => 'email',
+            'ktp' => 'berkas KTP',
         ]);
     }
 

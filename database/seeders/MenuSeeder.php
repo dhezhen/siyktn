@@ -22,6 +22,7 @@ class MenuSeeder extends Seeder
             ]],
 
             ['title' => 'Data Tahfidz', 'type' => 'header', 'children' => [
+                ['title' => 'Pendaftaran', 'icon' => 'info', 'type' => 'route', 'route' => 'pendaftaran.index', 'permission' => 'peserta.approve'],
                 ['title' => 'Angkatan', 'icon' => 'list', 'type' => 'route', 'route' => 'angkatan.index', 'permission' => 'angkatan.view'],
                 ['title' => 'Peserta', 'icon' => 'users', 'type' => 'route', 'route' => 'peserta.index', 'permission' => 'peserta.view'],
             ]],
@@ -53,14 +54,26 @@ class MenuSeeder extends Seeder
         $this->command?->info(Menu::count().' menu tersedia.');
     }
 
+    /**
+     * Tambahkan menu bila belum ada, dan JANGAN sentuh yang sudah ada.
+     *
+     * Identitas menu diambil dari nama route (untuk menu tautan) atau judul+tipe
+     * (untuk header/divider) — bukan dari parent_id atau order, karena keduanya
+     * memang dirancang untuk diubah petugas lewat halaman Manajemen Menu.
+     * Seeder yang menimpa susunan itu akan menghapus pekerjaan orang lain.
+     */
     protected function store(array $attributes, int $order): void
     {
-        Menu::updateOrCreate(
-            [
-                'title' => $attributes['title'],
-                'parent_id' => $attributes['parent_id'] ?? null,
-            ],
-            array_merge($attributes, ['order' => $order, 'is_active' => true])
-        );
+        $type = $attributes['type'] ?? 'route';
+
+        $kunci = in_array($type, ['header', 'divider'], true)
+            ? ['title' => $attributes['title'], 'type' => $type]
+            : ['route' => $attributes['route']];
+
+        if (Menu::where($kunci)->exists()) {
+            return;
+        }
+
+        Menu::create(array_merge($attributes, ['order' => $order, 'is_active' => true]));
     }
 }
