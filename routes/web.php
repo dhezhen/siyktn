@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -53,5 +54,13 @@ Route::middleware(['auth', 'active'])->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
+    // Rute khusus didaftarkan sebelum resource agar tidak tertangkap {user}.
+    Route::get('user/ekspor', [UserController::class, 'export'])->name('user.export');
+    Route::get('user/impor', [UserController::class, 'importForm'])->name('user.import.form');
+    Route::post('user/impor', [UserController::class, 'import'])->name('user.import');
+    Route::put('user/{user}/reset-password', [UserController::class, 'resetPassword'])->name('user.reset-password');
+    Route::post('user/{id}/pulihkan', [UserController::class, 'restore'])->name('user.restore');
+    Route::resource('user', UserController::class)->except('show');
+
     Route::resource('role', RoleController::class)->except('show');
 });
