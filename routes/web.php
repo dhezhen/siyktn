@@ -1,12 +1,14 @@
 <?php
 
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\AngkatanController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\PesertaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingController;
@@ -68,6 +70,14 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
     Route::resource('user', UserController::class)->except('show');
 
     Route::resource('role', RoleController::class)->except('show');
+
+    /*
+     | Data tahfidz
+     */
+    Route::resource('angkatan', AngkatanController::class)->parameters(['angkatan' => 'angkatan']);
+
+    Route::get('peserta/ekspor', [PesertaController::class, 'export'])->name('peserta.export');
+    Route::resource('peserta', PesertaController::class)->parameters(['peserta' => 'peserta']);
 
     /*
      | Pengaturan sistem
