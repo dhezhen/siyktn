@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\MenuController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
@@ -63,4 +64,13 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
     Route::resource('user', UserController::class)->except('show');
 
     Route::resource('role', RoleController::class)->except('show');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Pengaturan
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
+    Route::get('menu', [MenuController::class, 'index'])->name('menu.index');
 });
