@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <title>{{ isset($title) ? $title.' — '.setting('app_name', config('app.name')) : setting('app_name', config('app.name')) }}</title>
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @livewireStyles
+</head>
+<body class="h-full bg-slate-100 text-slate-800 antialiased">
+
+<div x-data="{ sidebarOpen: false }" class="min-h-full">
+
+    <div x-show="sidebarOpen" x-transition.opacity x-cloak
+         @click="sidebarOpen = false"
+         class="fixed inset-0 z-30 bg-slate-900/50 lg:hidden"></div>
+
+    @include('partials.sidebar')
+
+    <div class="lg:pl-64">
+        @include('partials.topbar')
+
+        <main class="p-4 sm:p-6">
+            @isset($header)
+                {{ $header }}
+            @endisset
+
+            <x-alert />
+
+            {{ $slot }}
+        </main>
+    </div>
+</div>
+
+@livewireScripts
+</body>
+</html>
