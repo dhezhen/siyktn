@@ -2,15 +2,16 @@
 
 namespace App\Support;
 
+use App\Models\Menu as MenuModel;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 
 /**
  * Penyedia data menu sidebar.
  *
- * Sampai Sprint 3 sumbernya config/menu.php. Di Sprint 4 method items()
- * diganti menjadi query ke tabel `menus` (plus cache per user) tanpa
- * mengubah view yang memakainya.
+ * Sumbernya tabel `menus` (lihat App\Models\Menu::tree(), sudah di-cache).
+ * Kelas ini hanya menyaring: menu disembunyikan bila route-nya belum ada
+ * atau permission-nya tidak dimiliki user yang sedang login.
  */
 class Menu
 {
@@ -21,7 +22,7 @@ class Menu
      */
     public static function items(): array
     {
-        return static::filter(config('menu.items', []));
+        return static::filter(MenuModel::tree());
     }
 
     /**
