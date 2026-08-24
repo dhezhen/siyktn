@@ -11,3 +11,72 @@
 [x-cloak] {
     display: none !important;
 }
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    /* Cincin fokus hanya muncul saat bernavigasi dengan keyboard, bukan saat diklik. */
+    :focus-visible {
+        outline-color: var(--color-emerald-600);
+    }
+
+    /* Scrollbar tipis agar sidebar dan tabel tidak terasa kasar. */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: var(--color-slate-300) transparent;
+    }
+
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background-color: var(--color-slate-300);
+        border-radius: 9999px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: var(--color-slate-400);
+    }
+}
+
+@layer components {
+    /* Baris tabel: sorotan yang menyapu, bukan berkedip. */
+    .tabel-baris {
+        transition: background-color 150ms ease-out;
+    }
+
+    /*
+     * Dipakai pada pembungkus tabel Livewire. Saat permintaan sedang berjalan,
+     * isinya diredupkan sedikit alih-alih berkedip kosong — perpindahan
+     * halaman dan filter jadi terasa mulus.
+     */
+    .memuat-halus {
+        transition: opacity 200ms ease-out, filter 200ms ease-out;
+    }
+
+    [wire\:loading\.class] .memuat-halus,
+    .memuat-halus[data-memuat='true'] {
+        opacity: 0.55;
+        filter: saturate(0.8);
+    }
+}
+
+/* Hormati preferensi pengguna yang tidak nyaman dengan animasi. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

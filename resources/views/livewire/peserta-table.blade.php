@@ -44,13 +44,19 @@
             Menampilkan {{ $peserta->count() }} dari {{ $peserta->total() }} peserta.
         </p>
         <div class="flex items-center gap-3">
-            <span wire:loading class="text-xs text-slate-400">Memuat…</span>
+            <span wire:loading.delay class="flex items-center gap-1.5 text-xs text-slate-400">
+                <svg class="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+                    <path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v3a5 5 0 0 0-5 5H4Z" />
+                </svg>
+                Memuat…
+            </span>
             <button type="button" wire:click="resetFilters" class="text-xs text-slate-500 hover:underline">Reset filter</button>
         </div>
     </div>
 
     <x-card padding="p-0">
-        <div class="overflow-x-auto">
+        <div class="memuat-halus overflow-x-auto" wire:loading.class="opacity-55">
             <table class="w-full text-sm">
                 <thead class="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                     <tr>
@@ -65,7 +71,7 @@
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($peserta as $item)
                         @php($terakhir = $item->pendaftaranTerakhir)
-                        <tr wire:key="peserta-{{ $item->id }}" class="hover:bg-slate-50">
+                        <tr wire:key="peserta-{{ $item->id }}" class="tabel-baris hover:bg-slate-50">
                             <td class="px-5 py-3">
                                 <div class="flex items-center gap-3">
                                     @if ($item->foto_url)
@@ -117,15 +123,25 @@
                             </td>
 
                             <td class="px-5 py-3">
-                                <div class="flex items-center justify-end gap-1">
-                                    <x-button :href="route('peserta.show', $item)" variant="ghost" size="sm">Detail</x-button>
+                                <div class="flex items-center justify-end gap-0.5">
+                                    <x-icon-button icon="eye" label="Lihat detail"
+                                                   :href="route('peserta.show', $item)" />
+
+                                    @if ($item->ktp_path)
+                                        @can('peserta.view')
+                                            <x-icon-button icon="identification" label="Lihat berkas KTP"
+                                                           :href="route('pendaftaran.ktp', $item)" target="_blank" />
+                                        @endcan
+                                    @endif
 
                                     @can('peserta.update')
-                                        <x-button :href="route('peserta.edit', $item)" variant="secondary" size="sm">Ubah</x-button>
+                                        <x-icon-button icon="pencil" label="Ubah data"
+                                                       :href="route('peserta.edit', $item)" />
                                     @endcan
 
                                     @can('peserta.delete')
                                         <x-confirm-delete :action="route('peserta.destroy', $item)" icon-only
+                                            label="Hapus peserta"
                                             :title="'Hapus '.$item->nama.'?'"
                                             message="Peserta beserta seluruh riwayat pendaftarannya dipindahkan ke daftar terhapus." />
                                     @endcan

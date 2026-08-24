@@ -2,13 +2,13 @@
     <x-page-header title="Pengguna" subtitle="Kelola akun, status, dan role setiap pengguna sistem.">
         <x-slot:actions>
             @can('user.export')
-                <x-button :href="route('user.export')" variant="secondary">Ekspor CSV</x-button>
+                <x-button :href="route('user.export')" variant="secondary" icon="download">Ekspor CSV</x-button>
             @endcan
             @can('user.import')
-                <x-button :href="route('user.import.form')" variant="secondary">Impor CSV</x-button>
+                <x-button :href="route('user.import.form')" variant="secondary" icon="upload">Impor CSV</x-button>
             @endcan
             @can('user.create')
-                <x-button :href="route('user.create')" icon="users">Tambah Pengguna</x-button>
+                <x-button :href="route('user.create')" icon="plus">Tambah Pengguna</x-button>
             @endcan
         </x-slot:actions>
     </x-page-header>

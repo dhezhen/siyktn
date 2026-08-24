@@ -10,10 +10,9 @@
 @endphp
 
 <li data-menu-id="{{ $menu->id }}" wire:key="menu-{{ $menu->id }}">
-    <div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-slate-300">
-        <button type="button" data-handle
-                class="cursor-grab text-slate-300 transition hover:text-slate-500 active:cursor-grabbing"
-                title="Seret untuk memindahkan">
+    <div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 transition duration-150 ease-out hover:border-slate-300 hover:shadow-sm">
+        <button type="button" data-handle aria-label="Seret untuk memindahkan"
+                class="cursor-grab rounded p-1 text-slate-300 transition duration-150 hover:bg-slate-100 hover:text-slate-500 active:cursor-grabbing">
             <svg class="size-4" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M7 4a1 1 0 100 2 1 1 0 000-2zm6 0a1 1 0 100 2 1 1 0 000-2zM7 9a1 1 0 100 2 1 1 0 000-2zm6 0a1 1 0 100 2 1 1 0 000-2zM7 14a1 1 0 100 2 1 1 0 000-2zm6 0a1 1 0 100 2 1 1 0 000-2z" />
             </svg>
@@ -42,32 +41,30 @@
             </p>
         </div>
 
-        <div class="flex shrink-0 items-center gap-1">
+        <div class="flex shrink-0 items-center gap-0.5">
             @can('menu.update')
-                <button type="button" wire:click="toggleActive({{ $menu->id }})"
-                        class="rounded px-2 py-1 text-xs text-slate-500 transition hover:bg-slate-100"
-                        title="{{ $menu->is_active ? 'Sembunyikan' : 'Tampilkan' }}">
-                    {{ $menu->is_active ? 'Sembunyikan' : 'Tampilkan' }}
-                </button>
+                <x-icon-button
+                    :icon="$menu->is_active ? 'eye-slash' : 'eye'"
+                    :label="$menu->is_active ? 'Sembunyikan dari sidebar' : 'Tampilkan di sidebar'"
+                    :variant="$menu->is_active ? 'default' : 'primary'"
+                    wire:click="toggleActive({{ $menu->id }})"
+                    wire:loading.attr="disabled" wire:target="toggleActive({{ $menu->id }})" />
             @endcan
 
             @can('menu.create')
-                <button type="button" wire:click="openCreate({{ $menu->id }})"
-                        class="rounded px-2 py-1 text-xs text-emerald-700 transition hover:bg-emerald-50"
-                        title="Tambah submenu">+ Sub</button>
+                <x-icon-button icon="plus" label="Tambah submenu" variant="primary"
+                               wire:click="openCreate({{ $menu->id }})" />
             @endcan
 
             @can('menu.update')
-                <button type="button" wire:click="openEdit({{ $menu->id }})"
-                        class="rounded px-2 py-1 text-xs text-slate-600 transition hover:bg-slate-100">Ubah</button>
+                <x-icon-button icon="pencil" label="Ubah menu"
+                               wire:click="openEdit({{ $menu->id }})" />
             @endcan
 
             @can('menu.delete')
-                <button type="button" wire:click="delete({{ $menu->id }})"
-                        wire:confirm="Hapus menu '{{ $menu->title }}'?"
-                        class="rounded p-1 text-rose-600 transition hover:bg-rose-50" title="Hapus">
-                    <x-icon name="trash" class="size-4" />
-                </button>
+                <x-icon-button icon="trash" label="Hapus menu" variant="danger"
+                               wire:click="delete({{ $menu->id }})"
+                               wire:confirm="Hapus menu '{{ $menu->title }}'?" />
             @endcan
         </div>
     </div>

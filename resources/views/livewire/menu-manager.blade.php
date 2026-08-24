@@ -6,7 +6,7 @@
                 subtitle="Seret untuk mengubah urutan atau memindahkan ke dalam menu lain.">
             <x-slot:actions>
                 @can('menu.create')
-                    <x-button size="sm" wire:click="openCreate">Tambah Menu</x-button>
+                    <x-button size="sm" icon="plus" wire:click="openCreate" busy-target="openCreate">Tambah Menu</x-button>
                 @endcan
             </x-slot:actions>
 
@@ -163,10 +163,7 @@
 
                     <div class="flex justify-end gap-2 border-t border-slate-100 pt-4">
                         <x-button type="button" variant="secondary" size="sm" wire:click="closeForm">Batal</x-button>
-                        <x-button type="submit" size="sm">
-                            <span wire:loading.remove wire:target="save">Simpan</span>
-                            <span wire:loading wire:target="save">Menyimpan…</span>
-                        </x-button>
+                        <x-button type="submit" size="sm" icon="check" busy-target="save">Simpan</x-button>
                     </div>
                 </form>
             </x-card>
@@ -176,14 +173,5 @@
                                message="Pilih menu di sebelah kiri untuk mengubahnya, atau tambah menu baru." />
             </x-card>
         @endif
-    </div>
-
-    {{-- Notifikasi --}}
-    <div x-data="{ show: false, type: 'success', message: '' }"
-         x-on:notify.window="type = $event.detail.type; message = $event.detail.message; show = true; setTimeout(() => show = false, 5000)"
-         x-show="show" x-cloak x-transition
-         class="fixed bottom-5 right-5 z-50 max-w-sm rounded-lg px-4 py-3 text-sm text-white shadow-lg"
-         x-bind:class="{ 'bg-emerald-600': type === 'success', 'bg-rose-600': type === 'error', 'bg-amber-600': type === 'warning' }">
-        <span x-text="message"></span>
     </div>
 </div>

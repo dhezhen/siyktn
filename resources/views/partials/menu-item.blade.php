@@ -15,7 +15,7 @@
 @elseif ($children !== [])
     <div x-data="{ open: @js($active) }">
         <button type="button" @click="open = ! open"
-                class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition hover:bg-white/5 hover:text-white {{ $active ? 'text-white' : '' }}">
+                class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition duration-150 ease-out hover:bg-white/5 hover:text-white {{ $active ? 'text-white' : '' }}">
             <x-icon :name="$item['icon'] ?? 'dot'" class="size-5 shrink-0" />
             <span class="flex-1 truncate text-left">{{ $item['title'] }}</span>
             <svg class="size-4 shrink-0 transition-transform" x-bind:class="open && 'rotate-180'"
@@ -32,8 +32,12 @@
 
 @else
     <a href="{{ \App\Support\Menu::url($item) }}" target="{{ $item['target'] ?? '_self' }}"
-       class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition {{ $active ? 'bg-emerald-600/15 text-emerald-400' : 'hover:bg-white/5 hover:text-white' }}">
-        <x-icon :name="$item['icon'] ?? 'dot'" class="size-5 shrink-0" />
+       @if ($active) aria-current="page" @endif
+       class="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition duration-150 ease-out {{ $active ? 'bg-emerald-600/15 text-emerald-400' : 'hover:bg-white/5 hover:text-white' }}">
+        @if ($active)
+            <span class="absolute inset-y-1.5 -left-1 w-1 rounded-full bg-emerald-400"></span>
+        @endif
+        <x-icon :name="$item['icon'] ?? 'dot'" class="size-5 shrink-0 transition duration-150 group-hover:scale-110" />
         <span class="truncate">{{ $item['title'] }}</span>
     </a>
 @endif

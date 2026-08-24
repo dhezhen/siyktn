@@ -2,7 +2,7 @@
     <x-page-header title="Angkatan" subtitle="Kelompok peserta per periode program.">
         <x-slot:actions>
             @can('angkatan.create')
-                <x-button :href="route('angkatan.create')" icon="list">Tambah Angkatan</x-button>
+                <x-button :href="route('angkatan.create')" icon="plus">Tambah Angkatan</x-button>
             @endcan
         </x-slot:actions>
     </x-page-header>
@@ -18,7 +18,7 @@
             @endforeach
         </select>
 
-        <x-button type="submit" variant="secondary">Filter</x-button>
+        <x-button type="submit" variant="secondary" icon="filter">Filter</x-button>
     </form>
 
     <x-card padding="p-0">
@@ -36,7 +36,7 @@
 
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($angkatan as $item)
-                        <tr class="hover:bg-slate-50">
+                        <tr class="tabel-baris hover:bg-slate-50">
                             <td class="px-5 py-3">
                                 <p class="font-medium text-slate-900">{{ $item->nama }}</p>
                                 <p class="text-xs text-slate-500">{{ $item->kode }} &middot; {{ $item->tahun }}</p>
@@ -67,15 +67,23 @@
                             </td>
 
                             <td class="px-5 py-3">
-                                <div class="flex items-center justify-end gap-1">
-                                    <x-button :href="route('angkatan.show', $item)" variant="ghost" size="sm">Detail</x-button>
+                                <div class="flex items-center justify-end gap-0.5">
+                                    <x-icon-button icon="eye" label="Lihat detail angkatan"
+                                                   :href="route('angkatan.show', $item)" />
+
+                                    @can('peserta.create')
+                                        <x-icon-button icon="plus" label="Tambah peserta ke angkatan ini"
+                                                       :href="route('peserta.create', ['angkatan_id' => $item->id])" />
+                                    @endcan
 
                                     @can('angkatan.update')
-                                        <x-button :href="route('angkatan.edit', $item)" variant="secondary" size="sm">Ubah</x-button>
+                                        <x-icon-button icon="pencil" label="Ubah angkatan"
+                                                       :href="route('angkatan.edit', $item)" />
                                     @endcan
 
                                     @can('angkatan.delete')
                                         <x-confirm-delete :action="route('angkatan.destroy', $item)" icon-only
+                                            label="Hapus angkatan"
                                             :title="'Hapus '.$item->nama.'?'"
                                             message="Angkatan yang masih memiliki peserta tidak dapat dihapus." />
                                     @endcan

@@ -8,7 +8,7 @@
             '' => ['label' => 'Semua', 'aktif' => 'bg-slate-800 text-white'],
         ] as $value => $tab)
             <button type="button" wire:click="pilihStatus('{{ $value }}')"
-                    class="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition {{ $status === $value ? $tab['aktif'] : 'bg-white text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50' }}">
+                    class="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium shadow-sm transition duration-150 ease-out active:scale-[0.97] {{ $status === $value ? $tab['aktif'] : 'bg-white text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50 hover:ring-slate-400' }}">
                 {{ $tab['label'] }}
                 @if ($value !== '')
                     <span class="rounded-full px-1.5 py-0.5 text-xs {{ $status === $value ? 'bg-white/20' : 'bg-slate-100 text-slate-600' }}">
@@ -62,7 +62,13 @@
             Menampilkan {{ $pendaftaran->count() }} dari {{ $pendaftaran->total() }} pendaftaran.
         </p>
         <div class="flex items-center gap-3">
-            <span wire:loading class="text-xs text-slate-400">Memuat…</span>
+            <span wire:loading.delay class="flex items-center gap-1.5 text-xs text-slate-400">
+                <svg class="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+                    <path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v3a5 5 0 0 0-5 5H4Z" />
+                </svg>
+                Memuat…
+            </span>
             <button type="button" wire:click="resetFilters" class="text-xs text-slate-500 hover:underline">Reset filter</button>
         </div>
     </div>
@@ -151,36 +157,48 @@
                     </div>
 
                     {{-- Aksi --}}
-                    <div class="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
+                    <div class="flex w-full shrink-0 flex-wrap items-center gap-1.5 sm:w-auto">
+                        <x-icon-button icon="eye" label="Lihat detail peserta"
+                                       :href="route('peserta.show', $orang)" />
+
                         @if ($orang?->ktp_path)
                             @can('peserta.view')
-                                <x-button :href="route('pendaftaran.ktp', $orang)" variant="secondary" size="sm" target="_blank">
-                                    Lihat KTP
-                                </x-button>
+                                <x-icon-button icon="identification" label="Lihat berkas KTP"
+                                               :href="route('pendaftaran.ktp', $orang)" target="_blank" />
                             @endcan
                         @else
-                            <span class="text-xs text-slate-400">Tanpa berkas KTP</span>
+                            <x-icon-button icon="identification" label="Tanpa berkas KTP" disabled />
                         @endif
 
                         @if ($item->isMenunggu())
                             @can('peserta.approve')
                                 <form method="POST" action="{{ route('pendaftaran.setujui', $item) }}">
                                     @csrf
-                                    <x-button type="submit" size="sm">Setujui</x-button>
+                                    <x-button type="submit" size="sm" icon="check">Setujui</x-button>
                                 </form>
 
                                 <div x-data="{ open: false }">
-                                    <x-button variant="danger" size="sm" @click="open = true">Tolak</x-button>
+                                    <x-button variant="danger" size="sm" icon="x-mark" @click="open = true">Tolak</x-button>
 
                                     <template x-teleport="body">
                                         <div x-show="open" x-cloak @keydown.escape.window="open = false"
-                                             class="fixed inset-0 z-50 flex items-center justify-center p-4">
-                                            <div x-show="open" x-transition.opacity @click="open = false"
-                                                 class="absolute inset-0 bg-slate-900/50"></div>
+                                             class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                                            <div x-show="open" @click="open = false"
+                                                 x-transition:enter="transition ease-out duration-200"
+                                                 x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                                                 x-transition:leave="transition ease-in duration-150"
+                                                 x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                                                 class="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px]"></div>
 
                                             <form method="POST" action="{{ route('pendaftaran.tolak', $item) }}"
-                                                  x-show="open" x-transition
-                                                  class="relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+                                                  x-show="open"
+                                                  x-transition:enter="transition ease-out duration-200"
+                                                  x-transition:enter-start="opacity-0 scale-95 translate-y-2"
+                                                  x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                                                  x-transition:leave="transition ease-in duration-150"
+                                                  x-transition:leave-start="opacity-100 scale-100"
+                                                  x-transition:leave-end="opacity-0 scale-95"
+                                                  class="relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl ring-1 ring-black/5">
                                                 @csrf
                                                 <h3 class="font-semibold text-slate-900">Tolak pendaftaran {{ $orang?->nama }}?</h3>
                                                 <p class="mt-1 text-sm text-slate-500">
@@ -194,7 +212,7 @@
 
                                                 <div class="mt-4 flex justify-end gap-2">
                                                     <x-button type="button" variant="secondary" size="sm" @click="open = false">Batal</x-button>
-                                                    <x-button type="submit" variant="danger" size="sm">Kirim Penolakan</x-button>
+                                                    <x-button type="submit" variant="danger" size="sm" icon="x-mark">Kirim Penolakan</x-button>
                                                 </div>
                                             </form>
                                         </div>

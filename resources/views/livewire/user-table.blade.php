@@ -31,7 +31,13 @@
         </label>
 
         <div class="flex items-center gap-3">
-            <span wire:loading class="text-xs text-slate-400">Memuat…</span>
+            <span wire:loading.delay class="flex items-center gap-1.5 text-xs text-slate-400">
+                <svg class="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+                    <path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v3a5 5 0 0 0-5 5H4Z" />
+                </svg>
+                Memuat…
+            </span>
             <button type="button" wire:click="resetFilters" class="text-xs text-slate-500 hover:underline">
                 Reset filter
             </button>
@@ -40,7 +46,7 @@
 
     {{-- Tabel --}}
     <x-card padding="p-0">
-        <div class="overflow-x-auto">
+        <div class="memuat-halus overflow-x-auto" wire:loading.class="opacity-55">
             <table class="w-full text-sm">
                 <thead class="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                     <tr>
@@ -55,7 +61,7 @@
 
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($users as $user)
-                        <tr wire:key="user-{{ $user->id }}" class="hover:bg-slate-50">
+                        <tr wire:key="user-{{ $user->id }}" class="tabel-baris hover:bg-slate-50">
                             <td class="px-5 py-3">
                                 <div class="flex items-center gap-3">
                                     @if ($user->avatar_url)
@@ -103,26 +109,33 @@
                             </td>
 
                             <td class="px-5 py-3">
-                                <div class="flex items-center justify-end gap-1">
+                                <div class="flex items-center justify-end gap-0.5">
                                     @if ($user->trashed())
                                         @can('user.delete')
                                             <form method="POST" action="{{ route('user.restore', $user->id) }}">
                                                 @csrf
-                                                <x-button type="submit" variant="secondary" size="sm">Pulihkan</x-button>
+                                                <x-icon-button icon="restore" label="Pulihkan pengguna"
+                                                               variant="primary" type="submit" />
                                             </form>
                                         @endcan
                                     @else
                                         @can('user.update')
-                                            <button type="button" wire:click="toggleActive({{ $user->id }})"
-                                                    class="rounded-lg px-2 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100">
-                                                {{ $user->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
-                                            </button>
-                                            <x-button :href="route('user.edit', $user)" variant="secondary" size="sm">Ubah</x-button>
+                                            <x-icon-button
+                                                :icon="$user->is_active ? 'eye-slash' : 'eye'"
+                                                :label="$user->is_active ? 'Nonaktifkan akun' : 'Aktifkan akun'"
+                                                :variant="$user->is_active ? 'default' : 'primary'"
+                                                wire:click="toggleActive({{ $user->id }})"
+                                                wire:loading.attr="disabled"
+                                                wire:target="toggleActive({{ $user->id }})" />
+
+                                            <x-icon-button icon="pencil" label="Ubah data"
+                                                           :href="route('user.edit', $user)" />
                                         @endcan
 
                                         @can('user.delete')
                                             @if ($user->id !== auth()->id())
                                                 <x-confirm-delete :action="route('user.destroy', $user)" icon-only
+                                                    label="Hapus pengguna"
                                                     :title="'Hapus '.$user->name.'?'"
                                                     message="Pengguna dipindahkan ke daftar terhapus dan bisa dipulihkan kembali." />
                                             @endif
@@ -149,13 +162,4 @@
             </div>
         @endif
     </x-card>
-
-    {{-- Notifikasi dari aksi Livewire --}}
-    <div x-data="{ show: false, type: 'success', message: '' }"
-         x-on:notify.window="type = $event.detail.type; message = $event.detail.message; show = true; setTimeout(() => show = false, 4000)"
-         x-show="show" x-cloak x-transition
-         class="fixed bottom-5 right-5 z-50 max-w-sm rounded-lg px-4 py-3 text-sm text-white shadow-lg"
-         x-bind:class="type === 'success' ? 'bg-emerald-600' : 'bg-rose-600'">
-        <span x-text="message"></span>
-    </div>
 </div>

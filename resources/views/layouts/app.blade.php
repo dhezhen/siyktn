@@ -33,6 +33,9 @@
             {{ $slot }}
         </main>
     </div>
+
+    {{-- Notifikasi mengambang untuk seluruh komponen Livewire. --}}
+    <x-toast />
 </div>
 
 @livewireScripts

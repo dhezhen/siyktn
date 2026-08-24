@@ -2,11 +2,11 @@
     <x-page-header title="Pendaftaran Peserta"
                    subtitle="Tinjau berkas pendaftaran yang masuk, lalu setujui atau tolak.">
         <x-slot:actions>
-            <x-button :href="route('pendaftaran.create')" variant="secondary" target="_blank">
+            <x-button :href="route('pendaftaran.create')" variant="secondary" icon="eye" target="_blank">
                 Buka Formulir Publik
             </x-button>
             @can('peserta.create')
-                <x-button :href="route('peserta.create')" icon="users">Input Manual</x-button>
+                <x-button :href="route('peserta.create')" icon="plus">Input Manual</x-button>
             @endcan
         </x-slot:actions>
     </x-page-header>

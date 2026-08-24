@@ -62,14 +62,55 @@ middleware `permission:`/`@can` di kode, dan kolom `permission` pada tabel `menu
 
 Komponen Blade di `resources/views/components`:
 
-`<x-page-header>` `<x-card>` `<x-button>` `<x-input>` `<x-select>` `<x-badge>`
-`<x-alert>` `<x-modal>` `<x-confirm-delete>` `<x-empty-state>` `<x-icon>`
+`<x-page-header>` `<x-card>` `<x-button>` `<x-icon-button>` `<x-input>` `<x-select>`
+`<x-badge>` `<x-alert>` `<x-toast>` `<x-modal>` `<x-confirm-delete>` `<x-empty-state>` `<x-icon>`
+
+### Aksi di dalam tabel
+
+Semua aksi baris memakai `<x-icon-button>`, bukan tautan teks:
+
+```blade
+<x-icon-button icon="eye"    label="Lihat detail" :href="route('peserta.show', $item)" />
+<x-icon-button icon="pencil" label="Ubah data"    :href="route('peserta.edit', $item)" />
+<x-confirm-delete :action="route('peserta.destroy', $item)" icon-only label="Hapus peserta" />
+```
+
+`label` wajib diisi: dipakai sebagai tooltip sekaligus `aria-label` untuk pembaca layar.
+Tooltipnya di-*teleport* ke `<body>` dan diposisikan dengan `x-anchor`, sehingga tidak
+terpotong oleh tabel yang memakai `overflow-x-auto`.
+
+Ikon baku: `eye` lihat, `pencil` ubah, `trash` hapus, `plus` tambah, `key` hak akses,
+`restore` pulihkan, `eye-slash` sembunyikan/nonaktifkan, `identification` berkas KTP,
+`download` ekspor, `upload` impor, `check` setujui, `x-mark` tolak.
+
+### Notifikasi
+
+- Pesan setelah pindah halaman: `session()->flash(...)` &rarr; dirender `<x-alert>`
+  (yang bertipe `success` menutup sendiri setelah 6 detik).
+- Pesan dari aksi Livewire tanpa pindah halaman:
+  `$this->dispatch('notify', type: 'success', message: '…')` &rarr; ditangkap
+  `<x-toast>` yang sudah dipasang sekali di layout. Jangan menulis ulang markup
+  toast di dalam komponen.
+
+### Umpan balik saat menunggu
+
+- Tombol yang memicu method Livewire: `<x-button busy-target="save">` — ikon berganti
+  spinner dan tombol dinonaktifkan selama proses.
+- Pembungkus tabel diberi `class="memuat-halus" wire:loading.class="opacity-55"`
+  supaya isinya meredup saat filter/paginasi diproses, bukan berkedip kosong.
 
 - Layout halaman: `<x-layouts::app>` (dalam sistem) dan `<x-layouts::guest>` (login dsb).
 - Pesan sukses/gagal lewat `session()->flash('success'|'error'|'warning'|'info', ...)`,
   otomatis dirender `<x-alert>` di layout.
 - Konfirmasi hapus memakai `<x-confirm-delete :action="..." />`, bukan `confirm()` browser.
 - Tabel besar memakai komponen Livewire dengan paginasi server-side, bukan render semua baris.
+
+## Bahasa
+
+Pesan validasi, paginasi, dan autentikasi diterjemahkan di `lang/id/` dan `lang/id.json`.
+Bila menambah aturan validasi baru yang belum ada terjemahannya, tambahkan ke
+`lang/id/validation.php` — jangan biarkan pesan bawaan berbahasa Inggris muncul
+berdampingan dengan label berbahasa Indonesia.
 
 ## Alur kerja
 
@@ -102,6 +143,7 @@ Akun bawaan (kata sandi semua: `password`):
 | 6 | Modul pertama: Angkatan & Peserta | ✅ |
 | 7 | Pendaftaran mandiri peserta + verifikasi + email | ✅ |
 | 8 | Pemisahan peserta (orang) dan pendaftaran (per angkatan) | ✅ |
+| 9 | Perbaikan UI/UX: tombol aksi berikon, transisi, bahasa Indonesia | ✅ |
 
 ## Model data peserta
 
