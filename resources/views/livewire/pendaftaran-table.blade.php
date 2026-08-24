@@ -2,13 +2,13 @@
     {{-- Tab status --}}
     <div class="mb-4 flex flex-wrap gap-2">
         @foreach ([
-            'menunggu' => ['label' => 'Menunggu Verifikasi', 'aktif' => 'bg-amber-600 text-white', 'diam' => 'bg-white text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50'],
-            'disetujui' => ['label' => 'Disetujui', 'aktif' => 'bg-emerald-600 text-white', 'diam' => 'bg-white text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50'],
-            'ditolak' => ['label' => 'Ditolak', 'aktif' => 'bg-rose-600 text-white', 'diam' => 'bg-white text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50'],
-            '' => ['label' => 'Semua', 'aktif' => 'bg-slate-800 text-white', 'diam' => 'bg-white text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50'],
+            'menunggu' => ['label' => 'Menunggu Verifikasi', 'aktif' => 'bg-amber-600 text-white'],
+            'disetujui' => ['label' => 'Disetujui', 'aktif' => 'bg-emerald-600 text-white'],
+            'ditolak' => ['label' => 'Ditolak', 'aktif' => 'bg-rose-600 text-white'],
+            '' => ['label' => 'Semua', 'aktif' => 'bg-slate-800 text-white'],
         ] as $value => $tab)
             <button type="button" wire:click="pilihStatus('{{ $value }}')"
-                    class="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition {{ $status === $value ? $tab['aktif'] : $tab['diam'] }}">
+                    class="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition {{ $status === $value ? $tab['aktif'] : 'bg-white text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50' }}">
                 {{ $tab['label'] }}
                 @if ($value !== '')
                     <span class="rounded-full px-1.5 py-0.5 text-xs {{ $status === $value ? 'bg-white/20' : 'bg-slate-100 text-slate-600' }}">
@@ -35,6 +35,13 @@
             @endforeach
         </select>
 
+        <select wire:model.live="riwayat"
+                class="rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
+            <option value="">Baru & ulang</option>
+            <option value="baru">Pendaftar baru</option>
+            <option value="ulang">Pendaftaran ulang</option>
+        </select>
+
         <select wire:model.live="sumber"
                 class="rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
             <option value="">Semua sumber</option>
@@ -42,14 +49,11 @@
             <option value="admin">Input petugas</option>
         </select>
 
-        <div>
+        <div class="grid grid-cols-2 gap-2">
             <input type="date" wire:model.live="dari" title="Didaftarkan dari tanggal"
-                   class="block w-full rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
-        </div>
-
-        <div>
+                   class="block w-full rounded-lg border-0 px-2 py-2 text-xs ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
             <input type="date" wire:model.live="sampai" title="Didaftarkan sampai tanggal"
-                   class="block w-full rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
+                   class="block w-full rounded-lg border-0 px-2 py-2 text-xs ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
         </div>
     </div>
 
@@ -66,25 +70,42 @@
     {{-- Daftar --}}
     <div class="space-y-3">
         @forelse ($pendaftaran as $item)
+            @php($orang = $item->peserta)
+            @php($ulang = ($orang?->pendaftaran_count ?? 1) > 1)
+
             <x-card wire:key="daftar-{{ $item->id }}" padding="p-4">
                 <div class="flex flex-wrap items-start gap-4">
                     <div class="min-w-0 flex-1">
                         <div class="flex flex-wrap items-center gap-2">
-                            <a href="{{ route('peserta.show', $item) }}" class="font-medium text-slate-900 hover:underline">
-                                {{ $item->nama }}
+                            <a href="{{ route('peserta.show', $orang) }}" class="font-medium text-slate-900 hover:underline">
+                                {{ $orang?->nama ?? '—' }}
                             </a>
                             <x-badge :color="$item->status_pendaftaran_color">{{ $item->status_pendaftaran_label }}</x-badge>
                             <x-badge :color="$item->sumber_pendaftaran === 'mandiri' ? 'sky' : 'slate'">
                                 {{ $item->sumber_pendaftaran === 'mandiri' ? 'mandiri' : 'petugas' }}
                             </x-badge>
+                            @if ($ulang)
+                                <x-badge color="amber">pendaftaran ke-{{ $orang->pendaftaran_count }}</x-badge>
+                            @endif
+                            @if ($orang && ! $orang->boleh_mendaftar_lagi)
+                                <x-badge color="rose">dicekal</x-badge>
+                            @endif
                         </div>
 
                         <p class="mt-1 font-mono text-xs text-slate-500">
-                            {{ $item->kode_pendaftaran ?: '—' }}
+                            {{ $item->kode_pendaftaran }}
                             @if ($item->nomor_induk)
                                 &middot; NIS {{ $item->nomor_induk }}
                             @endif
                         </p>
+
+                        @if ($ulang)
+                            <p class="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                                Orang ini sudah pernah terdaftar — identitasnya kemungkinan sudah pernah
+                                diverifikasi. <a href="{{ route('peserta.show', $orang) }}"
+                                   class="font-medium underline">Lihat riwayatnya</a>.
+                            </p>
+                        @endif
 
                         <dl class="mt-3 grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2 lg:grid-cols-3">
                             <div class="flex gap-2">
@@ -93,19 +114,19 @@
                             </div>
                             <div class="flex gap-2">
                                 <dt class="shrink-0 text-slate-500">NIK</dt>
-                                <dd class="truncate font-mono text-xs text-slate-800">{{ $item->nik ?: '—' }}</dd>
+                                <dd class="truncate font-mono text-xs text-slate-800">{{ $orang?->nik ?: '—' }}</dd>
                             </div>
                             <div class="flex gap-2">
                                 <dt class="shrink-0 text-slate-500">L/P</dt>
-                                <dd class="text-slate-800">{{ $item->jenis_kelamin_label }}</dd>
+                                <dd class="text-slate-800">{{ $orang?->jenis_kelamin_label ?? '—' }}</dd>
                             </div>
                             <div class="flex gap-2">
                                 <dt class="shrink-0 text-slate-500">Email</dt>
-                                <dd class="truncate text-slate-800">{{ $item->email ?: '—' }}</dd>
+                                <dd class="truncate text-slate-800">{{ $orang?->email ?: '—' }}</dd>
                             </div>
                             <div class="flex gap-2">
                                 <dt class="shrink-0 text-slate-500">No HP</dt>
-                                <dd class="truncate text-slate-800">{{ $item->no_hp ?: '—' }}</dd>
+                                <dd class="truncate text-slate-800">{{ $orang?->no_hp ?: '—' }}</dd>
                             </div>
                             <div class="flex gap-2">
                                 <dt class="shrink-0 text-slate-500">Didaftarkan</dt>
@@ -131,9 +152,9 @@
 
                     {{-- Aksi --}}
                     <div class="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
-                        @if ($item->ktp_path)
+                        @if ($orang?->ktp_path)
                             @can('peserta.view')
-                                <x-button :href="route('pendaftaran.ktp', $item)" variant="secondary" size="sm" target="_blank">
+                                <x-button :href="route('pendaftaran.ktp', $orang)" variant="secondary" size="sm" target="_blank">
                                     Lihat KTP
                                 </x-button>
                             @endcan
@@ -161,7 +182,7 @@
                                                   x-show="open" x-transition
                                                   class="relative w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
                                                 @csrf
-                                                <h3 class="font-semibold text-slate-900">Tolak pendaftaran {{ $item->nama }}?</h3>
+                                                <h3 class="font-semibold text-slate-900">Tolak pendaftaran {{ $orang?->nama }}?</h3>
                                                 <p class="mt-1 text-sm text-slate-500">
                                                     Alasan di bawah ini akan dikirim ke email pendaftar, jadi tuliskan
                                                     dengan jelas dan sopan.

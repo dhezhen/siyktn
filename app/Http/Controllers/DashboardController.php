@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Menu;
+use App\Models\Pendaftaran;
+use App\Models\Peserta;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
@@ -40,6 +42,18 @@ class DashboardController extends Controller
 
         if ($user->can('menu.view')) {
             $stats[] = ['label' => 'Menu Aktif', 'value' => Menu::active()->count(), 'icon' => 'list'];
+        }
+
+        if ($user->can('peserta.view')) {
+            $stats[] = ['label' => 'Total Peserta', 'value' => Peserta::count(), 'icon' => 'users'];
+        }
+
+        if ($user->can('peserta.approve')) {
+            $stats[] = [
+                'label' => 'Pendaftaran Menunggu',
+                'value' => Pendaftaran::menunggu()->count(),
+                'icon' => 'warning',
+            ];
         }
 
         return $stats;

@@ -6,43 +6,54 @@ use App\Models\Concerns\RecordsActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
+/**
+ * Orang. Satu baris seumur hidup, dikenali dari NIK.
+ *
+ * Keikutsertaan pada sebuah angkatan ada di model Pendaftaran — satu peserta
+ * boleh mendaftar berkali-kali (alumni yang ikut program lanjutan, pendaftar
+ * yang sebelumnya ditolak, dan sebagainya).
+ */
 class Peserta extends Model
 {
     use RecordsActivity, SoftDeletes;
 
     protected $table = 'peserta';
 
-    protected array $activityFields = [
-        'nomor_induk', 'nama', 'angkatan_id', 'status', 'no_hp', 'status_pendaftaran',
-    ];
+    protected array $activityFields = ['nama', 'nik', 'no_hp', 'email', 'boleh_mendaftar_lagi'];
 
     protected string $activityLabel = 'Peserta';
 
     protected $fillable = [
-        'kode_pendaftaran', 'angkatan_id', 'nomor_induk', 'nama', 'nik', 'jenis_kelamin',
-        'tempat_lahir', 'tanggal_lahir', 'alamat', 'no_hp', 'email',
-        'nama_wali', 'no_hp_wali', 'tanggal_masuk', 'status', 'foto', 'ktp_path', 'user_id',
-        'status_pendaftaran', 'sumber_pendaftaran', 'didaftarkan_pada',
-        'ditinjau_pada', 'ditinjau_oleh', 'alasan_penolakan',
+        'nama', 'nik', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir',
+        'alamat', 'no_hp', 'email', 'nama_wali', 'no_hp_wali',
+        'foto', 'ktp_path', 'boleh_mendaftar_lagi', 'alasan_cekal', 'user_id',
     ];
 
     protected function casts(): array
     {
         return [
             'tanggal_lahir' => 'date',
-            'tanggal_masuk' => 'date',
-            'didaftarkan_pada' => 'datetime',
-            'ditinjau_pada' => 'datetime',
+            'boleh_mendaftar_lagi' => 'boolean',
         ];
     }
 
-    public function angkatan(): BelongsTo
+    public function pendaftaran(): HasMany
     {
-        return $this->belongsTo(Angkatan::class);
+        return $this->hasMany(Pendaftaran::class)->latest('didaftarkan_pada');
+    }
+
+    /**
+     * Pendaftaran terbaru — yang biasanya ingin dilihat di daftar peserta.
+     */
+    public function pendaftaranTerakhir(): HasOne
+    {
+        return $this->hasOne(Pendaftaran::class)->latestOfMany('didaftarkan_pada');
     }
 
     public function user(): BelongsTo
@@ -50,29 +61,19 @@ class Peserta extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function peninjau(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'ditinjau_oleh');
-    }
-
     public function scopeAktif(Builder $query): Builder
     {
-        return $query->where('status', 'aktif');
+        return $query->whereHas('pendaftaran', fn ($q) => $q
+            ->where('status_pendaftaran', 'disetujui')
+            ->where('status', 'aktif'));
     }
 
-    public function scopeMenunggu(Builder $query): Builder
+    /**
+     * Peserta yang pernah menyelesaikan minimal satu angkatan.
+     */
+    public function scopeAlumni(Builder $query): Builder
     {
-        return $query->where('status_pendaftaran', 'menunggu');
-    }
-
-    public function scopeDisetujui(Builder $query): Builder
-    {
-        return $query->where('status_pendaftaran', 'disetujui');
-    }
-
-    public function scopeMandiri(Builder $query): Builder
-    {
-        return $query->where('sumber_pendaftaran', 'mandiri');
+        return $query->whereHas('pendaftaran', fn ($q) => $q->where('status', 'lulus'));
     }
 
     public function getFotoUrlAttribute(): ?string
@@ -96,72 +97,16 @@ class Peserta extends Model
         return $this->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan';
     }
 
-    public function getStatusColorAttribute(): string
+    public function isAlumni(): bool
     {
-        return match ($this->status) {
-            'aktif' => 'emerald',
-            'lulus' => 'sky',
-            'keluar' => 'rose',
-            default => 'slate',
-        };
-    }
-
-    public function getStatusPendaftaranLabelAttribute(): string
-    {
-        return match ($this->status_pendaftaran) {
-            'menunggu' => 'Menunggu Verifikasi',
-            'disetujui' => 'Disetujui',
-            'ditolak' => 'Ditolak',
-            default => $this->status_pendaftaran,
-        };
-    }
-
-    public function getStatusPendaftaranColorAttribute(): string
-    {
-        return match ($this->status_pendaftaran) {
-            'menunggu' => 'amber',
-            'disetujui' => 'emerald',
-            'ditolak' => 'rose',
-            default => 'slate',
-        };
-    }
-
-    public function isMenunggu(): bool
-    {
-        return $this->status_pendaftaran === 'menunggu';
+        return $this->pendaftaran()->where('status', 'lulus')->exists();
     }
 
     /**
-     * Nomor induk berikutnya untuk sebuah angkatan, mis. "AK-12-0007".
+     * Cari orang berdasarkan NIK. Dipakai saat menerima pendaftaran ulang.
      */
-    public static function nomorIndukBerikutnya(Angkatan $angkatan): string
+    public static function cariBerdasarkanNik(?string $nik): ?self
     {
-        $terakhir = static::withTrashed()
-            ->where('angkatan_id', $angkatan->id)
-            ->whereNotNull('nomor_induk')
-            ->orderByDesc('nomor_induk')
-            ->value('nomor_induk');
-
-        $urutan = $terakhir ? ((int) Str::afterLast($terakhir, '-')) + 1 : 1;
-
-        return sprintf('%s-%04d', $angkatan->kode, $urutan);
-    }
-
-    /**
-     * Kode tanda terima pendaftaran, mis. "REG-2026-0042".
-     * Dipakai pendaftar untuk menanyakan status berkasnya.
-     */
-    public static function kodePendaftaranBerikutnya(): string
-    {
-        $tahun = now()->year;
-
-        $terakhir = static::withTrashed()
-            ->where('kode_pendaftaran', 'like', "REG-{$tahun}-%")
-            ->orderByDesc('kode_pendaftaran')
-            ->value('kode_pendaftaran');
-
-        $urutan = $terakhir ? ((int) Str::afterLast($terakhir, '-')) + 1 : 1;
-
-        return sprintf('REG-%d-%04d', $tahun, $urutan);
+        return $nik ? static::where('nik', $nik)->first() : null;
     }
 }

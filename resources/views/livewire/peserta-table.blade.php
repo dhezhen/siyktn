@@ -1,8 +1,8 @@
 <div>
-    <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <div class="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <div class="lg:col-span-2">
             <input type="search" wire:model.live.debounce.400ms="search"
-                   placeholder="Cari nama, nomor induk, no HP, atau nama wali…"
+                   placeholder="Cari nama, NIK, nomor induk, email, no HP…"
                    class="block w-full rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
         </div>
 
@@ -22,13 +22,6 @@
             <option value="keluar">Keluar</option>
         </select>
 
-        <select wire:model.live="jenisKelamin"
-                class="rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
-            <option value="">Semua jenis kelamin</option>
-            <option value="L">Laki-laki</option>
-            <option value="P">Perempuan</option>
-        </select>
-
         <select wire:model.live="statusPendaftaran"
                 class="rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
             <option value="">Semua status pendaftaran</option>
@@ -37,15 +30,16 @@
             <option value="ditolak">Ditolak</option>
         </select>
 
-        <select wire:model.live="sumber"
+        <select wire:model.live="riwayat"
                 class="rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
-            <option value="">Semua sumber</option>
-            <option value="mandiri">Pendaftaran mandiri</option>
-            <option value="admin">Input petugas</option>
+            <option value="">Semua riwayat</option>
+            <option value="ulang">Pernah daftar &gt; 1 kali</option>
+            <option value="alumni">Alumni (pernah lulus)</option>
+            <option value="cekal">Tidak boleh mendaftar lagi</option>
         </select>
     </div>
 
-    <div class="mb-3 flex items-center justify-between gap-2">
+    <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
         <p class="text-sm text-slate-500">
             Menampilkan {{ $peserta->count() }} dari {{ $peserta->total() }} peserta.
         </p>
@@ -61,16 +55,16 @@
                 <thead class="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
                     <tr>
                         <th class="px-5 py-3 font-medium">Peserta</th>
-                        <th class="px-5 py-3 font-medium">Angkatan</th>
                         <th class="px-5 py-3 font-medium">Kontak</th>
-                        <th class="px-5 py-3 font-medium">Wali</th>
-                        <th class="px-5 py-3 font-medium">Status</th>
+                        <th class="px-5 py-3 font-medium">Angkatan Terakhir</th>
+                        <th class="px-5 py-3 font-medium">Riwayat</th>
                         <th class="px-5 py-3 text-right font-medium">Aksi</th>
                     </tr>
                 </thead>
 
                 <tbody class="divide-y divide-slate-100">
                     @forelse ($peserta as $item)
+                        @php($terakhir = $item->pendaftaranTerakhir)
                         <tr wire:key="peserta-{{ $item->id }}" class="hover:bg-slate-50">
                             <td class="px-5 py-3">
                                 <div class="flex items-center gap-3">
@@ -85,33 +79,40 @@
                                     <div class="min-w-0">
                                         <p class="truncate font-medium text-slate-900">{{ $item->nama }}</p>
                                         <p class="truncate text-xs text-slate-500">
-                                            {{ $item->nomor_induk ?: $item->kode_pendaftaran ?: '—' }}
+                                            {{ $terakhir?->nomor_induk ?: ($item->nik ?: '—') }}
                                             &middot; {{ $item->jenis_kelamin_label }}
                                         </p>
                                     </div>
                                 </div>
                             </td>
 
-                            <td class="px-5 py-3 text-slate-700">{{ $item->angkatan?->nama ?? '—' }}</td>
-
                             <td class="px-5 py-3">
                                 <p class="text-slate-700">{{ $item->no_hp ?: '—' }}</p>
-                                <p class="text-xs text-slate-500">{{ $item->tempat_lahir ?: '' }}</p>
+                                <p class="truncate text-xs text-slate-500">{{ $item->email ?: '' }}</p>
                             </td>
 
                             <td class="px-5 py-3">
-                                <p class="text-slate-700">{{ $item->nama_wali ?: '—' }}</p>
-                                <p class="text-xs text-slate-500">{{ $item->no_hp_wali ?: '' }}</p>
+                                <p class="text-slate-700">{{ $terakhir?->angkatan?->nama ?? '—' }}</p>
+                                @if ($terakhir)
+                                    <div class="mt-1 flex flex-wrap gap-1">
+                                        <x-badge :color="$terakhir->status_color">{{ $terakhir->status_label }}</x-badge>
+                                        @if ($terakhir->status_pendaftaran !== 'disetujui')
+                                            <x-badge :color="$terakhir->status_pendaftaran_color">
+                                                {{ $terakhir->status_pendaftaran_label }}
+                                            </x-badge>
+                                        @endif
+                                    </div>
+                                @endif
                             </td>
 
                             <td class="px-5 py-3">
-                                <div class="flex flex-col items-start gap-1">
-                                    <x-badge :color="$item->status_color">{{ Str::title($item->status) }}</x-badge>
-                                    @if ($item->status_pendaftaran !== 'disetujui')
-                                        <x-badge :color="$item->status_pendaftaran_color">
-                                            {{ $item->status_pendaftaran_label }}
-                                        </x-badge>
-                                    @endif
+                                <div class="flex flex-wrap gap-1">
+                                    <x-badge :color="$item->pendaftaran_count > 1 ? 'sky' : 'slate'">
+                                        {{ $item->pendaftaran_count }}x daftar
+                                    </x-badge>
+                                    @unless ($item->boleh_mendaftar_lagi)
+                                        <x-badge color="rose">dicekal</x-badge>
+                                    @endunless
                                 </div>
                             </td>
 
@@ -126,14 +127,14 @@
                                     @can('peserta.delete')
                                         <x-confirm-delete :action="route('peserta.destroy', $item)" icon-only
                                             :title="'Hapus '.$item->nama.'?'"
-                                            message="Data peserta dipindahkan ke daftar terhapus, bukan dihapus permanen." />
+                                            message="Peserta beserta seluruh riwayat pendaftarannya dipindahkan ke daftar terhapus." />
                                     @endcan
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6">
+                            <td colspan="5">
                                 <x-empty-state title="Belum ada peserta yang cocok"
                                                message="Tambahkan peserta baru atau ubah filter pencarian." />
                             </td>

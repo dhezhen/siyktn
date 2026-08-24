@@ -2,7 +2,8 @@
 
 namespace App\Notifications;
 
-use App\Models\Peserta;
+use App\Models\Pendaftaran;
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -15,7 +16,7 @@ class PendaftaranBaruMasuk extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public Peserta $peserta) {}
+    public function __construct(public Pendaftaran $pendaftaran) {}
 
     public function via(object $notifiable): array
     {
@@ -24,22 +25,29 @@ class PendaftaranBaruMasuk extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $sumber = $this->peserta->sumber_pendaftaran === 'mandiri'
+        $peserta = $this->pendaftaran->peserta;
+
+        $sumber = $this->pendaftaran->sumber_pendaftaran === 'mandiri'
             ? 'pendaftaran mandiri'
             : 'input petugas';
 
-        $sapaan = $notifiable instanceof \App\Models\User
-            ? 'Halo '.$notifiable->name
-            : 'Halo';
+        $sapaan = $notifiable instanceof User ? 'Halo '.$notifiable->name : 'Halo';
 
-        return (new MailMessage)
-            ->subject('Pendaftaran baru: '.$this->peserta->nama)
+        $mail = (new MailMessage)
+            ->subject('Pendaftaran baru: '.$peserta->nama)
             ->greeting($sapaan)
-            ->line("Ada pendaftaran peserta baru lewat {$sumber} yang perlu ditinjau.")
-            ->line('Kode: '.$this->peserta->kode_pendaftaran)
-            ->line('Nama: '.$this->peserta->nama)
-            ->line('Angkatan: '.($this->peserta->angkatan?->nama ?? '—'))
-            ->line('Nomor HP: '.($this->peserta->no_hp ?: '—'))
+            ->line("Ada pendaftaran peserta baru lewat {$sumber} yang perlu ditinjau.");
+
+        if ($this->pendaftaran->isPendaftaranUlang()) {
+            $mail->line('**Ini pendaftaran ulang.** Orang ini sudah pernah terdaftar, '
+                .'sehingga berkas identitasnya kemungkinan sudah pernah diverifikasi.');
+        }
+
+        return $mail
+            ->line('Kode: '.$this->pendaftaran->kode_pendaftaran)
+            ->line('Nama: '.$peserta->nama)
+            ->line('Angkatan: '.($this->pendaftaran->angkatan?->nama ?? '—'))
+            ->line('Nomor HP: '.($peserta->no_hp ?: '—'))
             ->action('Tinjau Pendaftaran', route('pendaftaran.index'))
             ->line('Berkas KTP tersimpan di sistem dan hanya bisa dibuka oleh petugas berwenang.');
     }

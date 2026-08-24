@@ -3,31 +3,30 @@
 namespace App\Services;
 
 use App\Models\Angkatan;
+use App\Models\Pendaftaran;
 use App\Models\Peserta;
 use App\Models\User;
 use App\Notifications\PendaftaranBaruMasuk;
 use App\Notifications\PendaftaranDisetujui;
 use App\Notifications\PendaftaranDiterima;
 use App\Notifications\PendaftaranDitolak;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
- * Satu tempat untuk seluruh alur pendaftaran peserta.
+ * Satu tempat untuk seluruh alur pendaftaran.
  *
- * Dipakai bersama oleh formulir pendaftaran mandiri (publik) dan oleh
- * petugas yang menginput peserta dari dalam sistem, supaya aturan
- * penomoran dan pengiriman email tidak ditulis dua kali.
+ * Dipakai bersama oleh formulir pendaftaran mandiri (publik) dan oleh petugas
+ * yang menginput dari dalam sistem, supaya aturan penomoran, pengenalan
+ * pendaftar lama, dan pengiriman email tidak ditulis dua kali.
  */
 class PendaftaranService
 {
-    /**
-     * Permission yang menentukan siapa saja yang diberi tahu saat ada
-     * pendaftaran baru.
-     */
     protected const PERMISSION_PENINJAU = 'peserta.approve';
 
     /**
@@ -36,7 +35,7 @@ class PendaftaranService
      * KTP adalah data pribadi, jadi TIDAK disimpan di disk `public`.
      * Berkasnya hanya bisa dibuka lewat route yang dijaga permission.
      */
-    public function simpanKtp(\Illuminate\Http\UploadedFile $file): string
+    public function simpanKtp(UploadedFile $file): string
     {
         return $file->store('ktp', 'local');
     }
@@ -51,56 +50,79 @@ class PendaftaranService
     /**
      * Catat pendaftaran baru, lalu kirim email ke pendaftar dan peninjau.
      *
-     * @param  array<string, mixed>  $data
+     * Bila NIK-nya sudah dikenal, baris peserta yang lama dipakai ulang dan
+     * datanya diperbarui — sehingga alumni tidak menghasilkan orang kembar.
+     *
+     * @param  array<string, mixed>  $dataPeserta
+     * @param  array<string, mixed>  $dataPendaftaran
      */
-    public function daftarkan(array $data, string $sumber = 'mandiri'): Peserta
+    public function daftarkan(array $dataPeserta, array $dataPendaftaran, string $sumber = 'mandiri'): Pendaftaran
     {
-        $peserta = Peserta::create(array_merge($data, [
-            'kode_pendaftaran' => Peserta::kodePendaftaranBerikutnya(),
-            'sumber_pendaftaran' => $sumber,
-            'didaftarkan_pada' => now(),
-        ]));
+        return DB::transaction(function () use ($dataPeserta, $dataPendaftaran, $sumber) {
+            $peserta = Peserta::cariBerdasarkanNik($dataPeserta['nik'] ?? null);
 
-        $this->kirimNotifikasiPendaftaranBaru($peserta);
+            if ($peserta) {
+                // Berkas lama dipertahankan bila kali ini tidak mengunggah ulang.
+                $peserta->fill(array_filter(
+                    $dataPeserta,
+                    fn ($nilai, $kolom) => ! in_array($kolom, ['foto', 'ktp_path'], true) || $nilai !== null,
+                    ARRAY_FILTER_USE_BOTH
+                ))->save();
+            } else {
+                $peserta = Peserta::create($dataPeserta);
+            }
 
-        return $peserta;
+            $pendaftaran = Pendaftaran::create(array_merge($dataPendaftaran, [
+                'peserta_id' => $peserta->id,
+                'kode_pendaftaran' => Pendaftaran::kodePendaftaranBerikutnya(),
+                'sumber_pendaftaran' => $sumber,
+                'didaftarkan_pada' => now(),
+            ]));
+
+            $this->kirimNotifikasiPendaftaranBaru($pendaftaran);
+
+            return $pendaftaran;
+        });
     }
 
     /**
      * Setujui pendaftaran: beri nomor induk, aktifkan, lalu kabari pendaftar.
      */
-    public function setujui(Peserta $peserta, User $peninjau): Peserta
+    public function setujui(Pendaftaran $pendaftaran, User $peninjau): Pendaftaran
     {
-        if (! $peserta->isMenunggu()) {
-            return $peserta;
+        if (! $pendaftaran->isMenunggu()) {
+            return $pendaftaran;
         }
 
-        $peserta->forceFill([
-            'nomor_induk' => $peserta->nomor_induk
-                ?: Peserta::nomorIndukBerikutnya($peserta->angkatan),
+        $pendaftaran->forceFill([
+            'nomor_induk' => $pendaftaran->nomor_induk
+                ?: Pendaftaran::nomorIndukBerikutnya($pendaftaran->angkatan),
             'status_pendaftaran' => 'disetujui',
             'status' => 'aktif',
-            'tanggal_masuk' => $peserta->tanggal_masuk ?? now()->toDateString(),
+            'tanggal_masuk' => $pendaftaran->tanggal_masuk ?? now()->toDateString(),
             'ditinjau_pada' => now(),
             'ditinjau_oleh' => $peninjau->id,
             'alasan_penolakan' => null,
         ])->save();
 
-        $this->kirimKePendaftar($peserta, new PendaftaranDisetujui($peserta->fresh('angkatan')));
+        $this->kirimKePendaftar(
+            $pendaftaran,
+            new PendaftaranDisetujui($pendaftaran->fresh(['peserta', 'angkatan']))
+        );
 
-        return $peserta;
+        return $pendaftaran;
     }
 
     /**
      * Tolak pendaftaran dengan alasan, lalu kabari pendaftar.
      */
-    public function tolak(Peserta $peserta, User $peninjau, string $alasan): Peserta
+    public function tolak(Pendaftaran $pendaftaran, User $peninjau, string $alasan): Pendaftaran
     {
-        if (! $peserta->isMenunggu()) {
-            return $peserta;
+        if (! $pendaftaran->isMenunggu()) {
+            return $pendaftaran;
         }
 
-        $peserta->forceFill([
+        $pendaftaran->forceFill([
             'status_pendaftaran' => 'ditolak',
             'status' => 'keluar',
             'ditinjau_pada' => now(),
@@ -108,9 +130,9 @@ class PendaftaranService
             'alasan_penolakan' => $alasan,
         ])->save();
 
-        $this->kirimKePendaftar($peserta, new PendaftaranDitolak($peserta));
+        $this->kirimKePendaftar($pendaftaran, new PendaftaranDitolak($pendaftaran->load('peserta')));
 
-        return $peserta;
+        return $pendaftaran;
     }
 
     /**
@@ -131,17 +153,17 @@ class PendaftaranService
     /**
      * Email ke pendaftar (bila mengisi email) dan ke seluruh peninjau.
      */
-    public function kirimNotifikasiPendaftaranBaru(Peserta $peserta): void
+    public function kirimNotifikasiPendaftaranBaru(Pendaftaran $pendaftaran): void
     {
-        $peserta->loadMissing('angkatan');
+        $pendaftaran->loadMissing(['peserta', 'angkatan']);
 
-        $this->kirimKePendaftar($peserta, new PendaftaranDiterima($peserta));
+        $this->kirimKePendaftar($pendaftaran, new PendaftaranDiterima($pendaftaran));
 
         $peninjau = $this->peninjau();
 
         if ($peninjau->isNotEmpty()) {
             $this->kirim(
-                fn () => Notification::send($peninjau, new PendaftaranBaruMasuk($peserta)),
+                fn () => Notification::send($peninjau, new PendaftaranBaruMasuk($pendaftaran)),
                 'peninjau pendaftaran'
             );
         }
@@ -152,22 +174,24 @@ class PendaftaranService
         if ($emailLembaga) {
             $this->kirim(
                 fn () => Notification::route('mail', $emailLembaga)
-                    ->notify(new PendaftaranBaruMasuk($peserta)),
+                    ->notify(new PendaftaranBaruMasuk($pendaftaran)),
                 'email lembaga'
             );
         }
     }
 
-    protected function kirimKePendaftar(Peserta $peserta, $notification): void
+    protected function kirimKePendaftar(Pendaftaran $pendaftaran, $notification): void
     {
-        if (! $peserta->email) {
+        $email = $pendaftaran->peserta?->email;
+
+        if (! $email) {
             return;
         }
 
         $this->kirim(
-            fn () => Notification::route('mail', [$peserta->email => $peserta->nama])
+            fn () => Notification::route('mail', [$email => $pendaftaran->peserta->nama])
                 ->notify($notification),
-            'pendaftar '.$peserta->kode_pendaftaran
+            'pendaftar '.$pendaftaran->kode_pendaftaran
         );
     }
 

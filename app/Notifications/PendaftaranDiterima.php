@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\Peserta;
+use App\Models\Pendaftaran;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -15,7 +15,7 @@ class PendaftaranDiterima extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public Peserta $peserta) {}
+    public function __construct(public Pendaftaran $pendaftaran) {}
 
     public function via(object $notifiable): array
     {
@@ -25,19 +25,26 @@ class PendaftaranDiterima extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $lembaga = setting('organization', setting('app_name', config('app.name')));
+        $peserta = $this->pendaftaran->peserta;
+        $ulang = $this->pendaftaran->isPendaftaranUlang();
 
-        return (new MailMessage)
-            ->subject('Pendaftaran Diterima — '.$this->peserta->kode_pendaftaran)
-            ->greeting('Assalamualaikum, '.$this->peserta->nama)
-            ->line("Terima kasih, pendaftaran Anda di {$lembaga} sudah kami terima.")
-            ->line('**Kode pendaftaran Anda: '.$this->peserta->kode_pendaftaran.'**')
+        $mail = (new MailMessage)
+            ->subject('Pendaftaran Diterima — '.$this->pendaftaran->kode_pendaftaran)
+            ->greeting(($ulang ? 'Selamat datang kembali, ' : 'Assalamualaikum, ').$peserta->nama);
+
+        $mail->line($ulang
+            ? "Pendaftaran ulang Anda di {$lembaga} sudah kami terima. Data Anda sebelumnya kami pakai kembali, jadi tidak perlu mengisi dari awal."
+            : "Terima kasih, pendaftaran Anda di {$lembaga} sudah kami terima.");
+
+        return $mail
+            ->line('**Kode pendaftaran Anda: '.$this->pendaftaran->kode_pendaftaran.'**')
             ->line('Simpan kode ini untuk menanyakan status berkas Anda.')
             ->line('Berkas Anda akan diverifikasi oleh petugas kami. Anda akan menerima email
                     lanjutan begitu hasil verifikasi keluar, biasanya dalam 1–3 hari kerja.')
             ->line('**Ringkasan data Anda**')
-            ->line('Nama: '.$this->peserta->nama)
-            ->line('Angkatan yang dituju: '.($this->peserta->angkatan?->nama ?? '—'))
-            ->line('Nomor HP: '.($this->peserta->no_hp ?: '—'))
+            ->line('Nama: '.$peserta->nama)
+            ->line('Angkatan yang dituju: '.($this->pendaftaran->angkatan?->nama ?? '—'))
+            ->line('Nomor HP: '.($peserta->no_hp ?: '—'))
             ->salutation('Wassalamualaikum, '.PHP_EOL.$lembaga);
     }
 }

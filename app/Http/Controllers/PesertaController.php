@@ -3,18 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Models\Angkatan;
+use App\Models\Pendaftaran;
 use App\Models\Peserta;
+use App\Services\PendaftaranService;
+use App\Support\KelayakanPendaftaran;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use App\Services\PendaftaranService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * Mengelola peserta sebagai ORANG. Keikutsertaannya per angkatan ada di
+ * model Pendaftaran, dan seorang peserta boleh punya banyak pendaftaran.
+ */
 class PesertaController extends Controller implements HasMiddleware
 {
     public function __construct(protected PendaftaranService $pendaftaran) {}
@@ -37,7 +44,7 @@ class PesertaController extends Controller implements HasMiddleware
 
     public function show(Peserta $peserta): View
     {
-        $peserta->load(['angkatan', 'peninjau:id,name']);
+        $peserta->load(['pendaftaran.angkatan', 'pendaftaran.peninjau:id,name']);
 
         return view('peserta.show', ['peserta' => $peserta]);
     }
@@ -46,43 +53,64 @@ class PesertaController extends Controller implements HasMiddleware
     {
         $angkatan = Angkatan::orderByDesc('tahun')->get();
 
-        $peserta = new Peserta([
-            'status' => 'aktif',
-            'jenis_kelamin' => 'L',
-            'tanggal_masuk' => now()->toDateString(),
-            'angkatan_id' => $request->integer('angkatan_id') ?: $angkatan->firstWhere('status', 'berjalan')?->id,
+        return view('peserta.form', [
+            'peserta' => new Peserta(['jenis_kelamin' => 'L', 'boleh_mendaftar_lagi' => true]),
+            'angkatan' => $angkatan,
+            'angkatanTerpilih' => $request->integer('angkatan_id')
+                ?: $angkatan->firstWhere('status', 'berjalan')?->id,
         ]);
-
-        return view('peserta.form', compact('peserta', 'angkatan'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validated($request);
 
-        // Nomor induk boleh dikosongkan — sistem yang membuatkan.
-        if (empty($data['nomor_induk'])) {
-            $data['nomor_induk'] = Peserta::nomorIndukBerikutnya(Angkatan::findOrFail($data['angkatan_id']));
+        $request->validate(
+            ['angkatan_id' => ['required', 'exists:angkatan,id']],
+            attributes: ['angkatan_id' => 'angkatan']
+        );
+
+        $angkatanId = (int) $request->input('angkatan_id');
+
+        // Petugas pun tunduk pada aturan yang sama, supaya tidak ada dua baris
+        // orang untuk satu NIK.
+        $kelayakan = KelayakanPendaftaran::periksa($data['nik'] ?? null, $angkatanId);
+
+        if (! $kelayakan->boleh) {
+            throw ValidationException::withMessages(['nik' => $kelayakan->alasan]);
         }
 
-        if ($request->hasFile('ktp')) {
-            $data['ktp_path'] = $this->pendaftaran->simpanKtp($request->file('ktp'));
-        }
+        $data['ktp_path'] = $request->hasFile('ktp')
+            ? $this->pendaftaran->simpanKtp($request->file('ktp'))
+            : null;
 
-        unset($data['foto'], $data['ktp']);
+        $data['foto'] = $request->hasFile('foto')
+            ? $request->file('foto')->store('peserta', 'public')
+            : null;
 
         // Peserta yang diinput petugas dianggap sudah terverifikasi, tetapi
         // tetap melewati alur yang sama agar emailnya ikut terkirim.
-        $peserta = $this->pendaftaran->daftarkan(array_merge($data, [
-            'status_pendaftaran' => 'disetujui',
-            'ditinjau_pada' => now(),
-            'ditinjau_oleh' => Auth::id(),
-        ]), sumber: 'admin');
+        $pendaftaran = $this->pendaftaran->daftarkan(
+            dataPeserta: $data,
+            dataPendaftaran: [
+                'angkatan_id' => $angkatanId,
+                'nomor_induk' => Pendaftaran::nomorIndukBerikutnya(Angkatan::findOrFail($angkatanId)),
+                'status_pendaftaran' => 'disetujui',
+                'status' => $request->input('status', 'aktif'),
+                'tanggal_masuk' => $request->input('tanggal_masuk') ?: now()->toDateString(),
+                'ditinjau_pada' => now(),
+                'ditinjau_oleh' => Auth::id(),
+            ],
+            sumber: 'admin',
+        );
 
-        $this->storeFoto($request, $peserta);
+        $catatan = $kelayakan->pendaftaranUlang
+            ? ' Data orang yang sudah ada dipakai kembali (pendaftaran ulang).'
+            : '';
 
-        return redirect()->route('peserta.index')
-            ->with('success', "Peserta {$peserta->nama} ({$peserta->nomor_induk}) berhasil ditambahkan.");
+        return redirect()->route('peserta.show', $pendaftaran->peserta)
+            ->with('success',
+                "Peserta {$pendaftaran->peserta->nama} ({$pendaftaran->nomor_induk}) berhasil ditambahkan.".$catatan);
     }
 
     public function edit(Peserta $peserta): View
@@ -90,6 +118,7 @@ class PesertaController extends Controller implements HasMiddleware
         return view('peserta.form', [
             'peserta' => $peserta,
             'angkatan' => Angkatan::orderByDesc('tahun')->get(),
+            'angkatanTerpilih' => null,
         ]);
     }
 
@@ -102,14 +131,17 @@ class PesertaController extends Controller implements HasMiddleware
             $data['ktp_path'] = $this->pendaftaran->simpanKtp($request->file('ktp'));
         }
 
-        // Berkas ditangani terpisah — jangan sampai objek file ikut disimpan
-        // ke kolom teks.
-        unset($data['foto'], $data['ktp']);
+        if ($request->hasFile('foto')) {
+            if ($peserta->foto) {
+                Storage::disk('public')->delete($peserta->foto);
+            }
+
+            $data['foto'] = $request->file('foto')->store('peserta', 'public');
+        }
 
         $peserta->update($data);
-        $this->storeFoto($request, $peserta);
 
-        return redirect()->route('peserta.index')
+        return redirect()->route('peserta.show', $peserta)
             ->with('success', "Data {$peserta->nama} berhasil diperbarui.");
     }
 
@@ -118,7 +150,8 @@ class PesertaController extends Controller implements HasMiddleware
         $nama = $peserta->nama;
         $peserta->delete();
 
-        return back()->with('success', "Peserta {$nama} dipindahkan ke daftar terhapus.");
+        return redirect()->route('peserta.index')
+            ->with('success', "Peserta {$nama} dipindahkan ke daftar terhapus.");
     }
 
     public function export(Request $request): StreamedResponse
@@ -136,29 +169,34 @@ class PesertaController extends Controller implements HasMiddleware
                 'Tanggal Masuk', 'Status', 'Status Pendaftaran', 'Sumber', 'Didaftarkan Pada',
             ]);
 
-            Peserta::with('angkatan:id,nama')
+            // Satu baris per pendaftaran, sehingga alumni yang ikut dua angkatan
+            // muncul dua kali — memang begitu yang diharapkan di rekap.
+            Pendaftaran::with(['peserta', 'angkatan:id,nama'])
                 ->when($angkatanId, fn ($q) => $q->where('angkatan_id', $angkatanId))
+                ->orderBy('angkatan_id')
                 ->orderBy('nomor_induk')
                 ->chunk(500, function ($rows) use ($handle) {
-                    foreach ($rows as $peserta) {
+                    foreach ($rows as $daftar) {
+                        $peserta = $daftar->peserta;
+
                         fputcsv($handle, [
-                            $peserta->kode_pendaftaran,
-                            $peserta->nomor_induk,
-                            $peserta->nama,
-                            $peserta->nik,
-                            $peserta->jenis_kelamin_label,
-                            $peserta->angkatan?->nama,
-                            $peserta->tempat_lahir,
-                            $peserta->tanggal_lahir?->format('Y-m-d'),
-                            $peserta->no_hp,
-                            $peserta->email,
-                            $peserta->nama_wali,
-                            $peserta->no_hp_wali,
-                            $peserta->tanggal_masuk?->format('Y-m-d'),
-                            $peserta->status,
-                            $peserta->status_pendaftaran,
-                            $peserta->sumber_pendaftaran,
-                            $peserta->didaftarkan_pada?->format('Y-m-d H:i'),
+                            $daftar->kode_pendaftaran,
+                            $daftar->nomor_induk,
+                            $peserta?->nama,
+                            $peserta?->nik,
+                            $peserta?->jenis_kelamin_label,
+                            $daftar->angkatan?->nama,
+                            $peserta?->tempat_lahir,
+                            $peserta?->tanggal_lahir?->format('Y-m-d'),
+                            $peserta?->no_hp,
+                            $peserta?->email,
+                            $peserta?->nama_wali,
+                            $peserta?->no_hp_wali,
+                            $daftar->tanggal_masuk?->format('Y-m-d'),
+                            $daftar->status,
+                            $daftar->status_pendaftaran,
+                            $daftar->sumber_pendaftaran,
+                            $daftar->didaftarkan_pada?->format('Y-m-d H:i'),
                         ]);
                     }
                 });
@@ -172,14 +210,18 @@ class PesertaController extends Controller implements HasMiddleware
      */
     protected function validated(Request $request, ?Peserta $peserta = null): array
     {
-        return $request->validate([
-            'angkatan_id' => ['required', 'exists:angkatan,id'],
-            'nomor_induk' => [
-                'nullable', 'string', 'max:30',
-                Rule::unique('peserta', 'nomor_induk')->ignore($peserta?->id),
-            ],
+        // Saat menambah, keunikan NIK diputuskan KelayakanPendaftaran — NIK yang
+        // sudah ada boleh dipakai lagi bila orangnya memang berhak mendaftar
+        // ulang. Saat mengubah, NIK tetap tidak boleh bertabrakan.
+        $aturanNik = ['nullable', 'digits:16'];
+
+        if ($peserta) {
+            $aturanNik[] = Rule::unique('peserta', 'nik')->ignore($peserta->id);
+        }
+
+        $data = $request->validate([
             'nama' => ['required', 'string', 'max:100'],
-            'nik' => ['nullable', 'digits:16', Rule::unique('peserta', 'nik')->ignore($peserta?->id)],
+            'nik' => $aturanNik,
             'email' => ['nullable', 'email', 'max:150'],
             'jenis_kelamin' => ['required', Rule::in(['L', 'P'])],
             'tempat_lahir' => ['nullable', 'string', 'max:80'],
@@ -188,41 +230,35 @@ class PesertaController extends Controller implements HasMiddleware
             'no_hp' => ['nullable', 'string', 'max:25'],
             'nama_wali' => ['nullable', 'string', 'max:100'],
             'no_hp_wali' => ['nullable', 'string', 'max:25'],
-            'tanggal_masuk' => ['nullable', 'date'],
-            'status' => ['required', Rule::in(['aktif', 'lulus', 'keluar'])],
+            'boleh_mendaftar_lagi' => ['nullable', 'boolean'],
+            'alasan_cekal' => ['nullable', 'string', 'max:500'],
             'foto' => ['nullable', 'image', 'max:2048'],
             'ktp' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
         ], [
             'nik.digits' => 'NIK harus terdiri dari 16 angka.',
+            'nik.unique' => 'NIK ini sudah dipakai peserta lain.',
             'tanggal_lahir.before' => 'Tanggal lahir harus sebelum hari ini.',
         ], [
-            'angkatan_id' => 'angkatan',
-            'nomor_induk' => 'nomor induk',
             'nama' => 'nama',
+            'nik' => 'NIK',
+            'email' => 'email',
             'jenis_kelamin' => 'jenis kelamin',
             'tempat_lahir' => 'tempat lahir',
             'tanggal_lahir' => 'tanggal lahir',
             'no_hp' => 'nomor HP',
             'nama_wali' => 'nama wali',
             'no_hp_wali' => 'nomor HP wali',
-            'tanggal_masuk' => 'tanggal masuk',
             'foto' => 'foto',
-            'nik' => 'NIK',
-            'email' => 'email',
             'ktp' => 'berkas KTP',
+            'alasan_cekal' => 'alasan pencekalan',
         ]);
-    }
 
-    protected function storeFoto(Request $request, Peserta $peserta): void
-    {
-        if (! $request->hasFile('foto')) {
-            return;
-        }
+        // Berkas ditangani terpisah — jangan sampai objek file ikut disimpan
+        // ke kolom teks.
+        unset($data['foto'], $data['ktp']);
 
-        if ($peserta->foto) {
-            Storage::disk('public')->delete($peserta->foto);
-        }
+        $data['boleh_mendaftar_lagi'] = $request->boolean('boleh_mendaftar_lagi');
 
-        $peserta->update(['foto' => $request->file('foto')->store('peserta', 'public')]);
+        return $data;
     }
 }

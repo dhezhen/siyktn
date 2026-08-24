@@ -2,12 +2,14 @@
 
 <x-layouts::app :title="$editing ? 'Ubah Peserta' : 'Tambah Peserta'">
     <x-page-header :title="$editing ? 'Ubah Peserta: '.$peserta->nama : 'Tambah Peserta'"
-                   subtitle="Data pribadi, wali, dan status keikutsertaan." />
+                   :subtitle="$editing
+                        ? 'Data pribadi peserta. Riwayat pendaftarannya diatur dari halaman Pendaftaran.'
+                        : 'Data pribadi sekaligus pendaftaran pertamanya.'" />
 
-    @if ($angkatan->isEmpty())
+    @if (! $editing && $angkatan->isEmpty())
         <x-card>
             <x-empty-state title="Belum ada angkatan"
-                           message="Peserta harus tergabung dalam sebuah angkatan. Buat angkatan terlebih dahulu.">
+                           message="Peserta harus terdaftar pada sebuah angkatan. Buat angkatan terlebih dahulu.">
                 <x-slot:actions>
                     <x-button :href="route('angkatan.create')">Buat Angkatan</x-button>
                 </x-slot:actions>
@@ -21,28 +23,48 @@
 
             <div class="grid gap-4 lg:grid-cols-3">
                 <div class="space-y-4 lg:col-span-2">
-                    <x-card title="Data Peserta">
-                        <div class="grid gap-4 sm:grid-cols-2">
-                            <x-select name="angkatan_id" label="Angkatan" required>
+                    @unless ($editing)
+                        <x-card title="Angkatan"
+                                subtitle="Pendaftaran pertama peserta ini langsung dibuat dan berstatus disetujui.">
+                            <x-select name="angkatan_id" label="Pilih Angkatan" required>
                                 @foreach ($angkatan as $item)
-                                    <option value="{{ $item->id }}" @selected(old('angkatan_id', $peserta->angkatan_id) == $item->id)>
-                                        {{ $item->nama }} ({{ $item->kode }})
+                                    <option value="{{ $item->id }}"
+                                        @selected(old('angkatan_id', $angkatanTerpilih) == $item->id)>
+                                        {{ $item->nama }} ({{ $item->kode }}) — {{ $item->status_label }}
                                     </option>
                                 @endforeach
                             </x-select>
 
-                            <x-input name="nomor_induk" label="Nomor Induk"
-                                     :value="old('nomor_induk', $peserta->nomor_induk)"
-                                     :hint="$editing ? 'Ubah dengan hati-hati, nomor ini dipakai di dokumen lain.' : 'Kosongkan agar dibuat otomatis dari kode angkatan.'" />
+                            <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                                <x-input name="tanggal_masuk" type="date" label="Tanggal Masuk"
+                                         :value="old('tanggal_masuk', now()->toDateString())" />
 
+                                <x-select name="status" label="Status Keikutsertaan" required>
+                                    @foreach (['aktif' => 'Aktif', 'lulus' => 'Lulus', 'keluar' => 'Keluar'] as $value => $label)
+                                        <option value="{{ $value }}" @selected(old('status', 'aktif') === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </x-select>
+                            </div>
+
+                            <p class="mt-3 rounded-lg bg-sky-50 p-3 text-xs leading-relaxed text-sky-900">
+                                Bila NIK yang Anda isi sudah pernah terdaftar, sistem akan memakai kembali
+                                data orang tersebut dan mencatatnya sebagai pendaftaran ulang — bukan
+                                membuat peserta kembar.
+                            </p>
+                        </x-card>
+                    @endunless
+
+                    <x-card title="Data Diri">
+                        <div class="grid gap-4 sm:grid-cols-2">
                             <x-input name="nama" label="Nama Lengkap" required :value="old('nama', $peserta->nama)" />
 
                             <x-input name="nik" label="NIK" :value="old('nik', $peserta->nik)"
-                                     inputmode="numeric" maxlength="16" placeholder="16 digit sesuai KTP" />
+                                     inputmode="numeric" maxlength="16" placeholder="16 digit sesuai KTP"
+                                     hint="Dipakai sistem untuk mengenali peserta yang mendaftar lagi." />
 
                             <x-input name="email" type="email" label="Email" :value="old('email', $peserta->email)"
                                      placeholder="nama@contoh.id"
-                                     hint="Bila diisi, peserta menerima email pemberitahuan pendaftaran." />
+                                     hint="Bila diisi, peserta menerima email pemberitahuan." />
 
                             <x-select name="jenis_kelamin" label="Jenis Kelamin" required>
                                 <option value="L" @selected(old('jenis_kelamin', $peserta->jenis_kelamin) === 'L')>Laki-laki</option>
@@ -56,9 +78,6 @@
 
                             <x-input name="no_hp" label="Nomor HP" :value="old('no_hp', $peserta->no_hp)"
                                      placeholder="08xxxxxxxxxx" />
-
-                            <x-input name="tanggal_masuk" type="date" label="Tanggal Masuk"
-                                     :value="old('tanggal_masuk', $peserta->tanggal_masuk?->format('Y-m-d'))" />
                         </div>
 
                         <div class="mt-4">
@@ -112,29 +131,28 @@
                                  hint="JPG, PNG, atau PDF. Maksimal 2 MB. Disimpan tertutup, tidak dapat diakses publik." />
                     </x-card>
 
-                    <x-card title="Status">
-                        <x-select name="status" label="Status Keikutsertaan" required>
-                            @foreach (['aktif' => 'Aktif', 'lulus' => 'Lulus', 'keluar' => 'Keluar'] as $value => $label)
-                                <option value="{{ $value }}" @selected(old('status', $peserta->status) === $value)>{{ $label }}</option>
-                            @endforeach
-                        </x-select>
+                    <x-card title="Pendaftaran Berikutnya">
+                        <label class="flex items-start gap-2 text-sm text-slate-700">
+                            <input type="checkbox" name="boleh_mendaftar_lagi" value="1"
+                                   @checked(old('boleh_mendaftar_lagi', $peserta->boleh_mendaftar_lagi ?? true))
+                                   class="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <span>
+                                Boleh mendaftar lagi
+                                <span class="block text-xs text-slate-500">
+                                    Hilangkan centang bila orang ini tidak boleh mengikuti angkatan berikutnya.
+                                </span>
+                            </span>
+                        </label>
 
-                        @if ($editing)
-                            <div class="mt-4 border-t border-slate-100 pt-4">
-                                <p class="text-xs text-slate-500">Status pendaftaran</p>
-                                <div class="mt-1">
-                                    <x-badge :color="$peserta->status_pendaftaran_color">
-                                        {{ $peserta->status_pendaftaran_label }}
-                                    </x-badge>
-                                </div>
-                                @if ($peserta->isMenunggu())
-                                    <p class="mt-2 text-xs text-slate-500">
-                                        Setujui atau tolak lewat halaman
-                                        <a href="{{ route('pendaftaran.index') }}" class="text-emerald-700 hover:underline">Pendaftaran</a>.
-                                    </p>
-                                @endif
-                            </div>
-                        @endif
+                        <div class="mt-3">
+                            <label for="alasan_cekal" class="mb-1 block text-sm font-medium text-slate-700">
+                                Alasan (bila dicekal)
+                            </label>
+                            <textarea name="alasan_cekal" id="alasan_cekal" rows="2"
+                                      placeholder="Tercatat internal, tidak dikirim ke peserta."
+                                      class="block w-full rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">{{ old('alasan_cekal', $peserta->alasan_cekal) }}</textarea>
+                            @error('alasan_cekal')<p class="mt-1 text-xs text-rose-600">{{ $message }}</p>@enderror
+                        </div>
                     </x-card>
                 </div>
             </div>

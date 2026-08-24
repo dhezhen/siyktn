@@ -3,7 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Angkatan;
-use App\Models\Peserta;
+use App\Models\Pendaftaran;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -32,6 +32,9 @@ class PendaftaranTable extends Component
     public string $sumber = '';
 
     #[Url]
+    public string $riwayat = '';
+
+    #[Url]
     public string $dari = '';
 
     #[Url]
@@ -41,26 +44,26 @@ class PendaftaranTable extends Component
 
     public function updated($property): void
     {
-        if (in_array($property, ['search', 'status', 'angkatan', 'sumber', 'dari', 'sampai'], true)) {
+        if (in_array($property, ['search', 'status', 'angkatan', 'sumber', 'riwayat', 'dari', 'sampai'], true)) {
             $this->resetPage();
         }
     }
 
     public function resetFilters(): void
     {
-        $this->reset(['search', 'angkatan', 'sumber', 'dari', 'sampai']);
+        $this->reset(['search', 'angkatan', 'sumber', 'riwayat', 'dari', 'sampai']);
         $this->status = 'menunggu';
         $this->resetPage();
     }
 
     /**
-     * Jumlah per status, dipakai untuk tab di atas tabel.
+     * Jumlah per status, dipakai untuk tab di atas daftar.
      *
      * @return array<string, int>
      */
     public function getJumlahProperty(): array
     {
-        $hitungan = Peserta::query()
+        $hitungan = Pendaftaran::query()
             ->selectRaw('status_pendaftaran, count(*) as total')
             ->groupBy('status_pendaftaran')
             ->pluck('total', 'status_pendaftaran');
@@ -80,20 +83,30 @@ class PendaftaranTable extends Component
 
     public function render(): View
     {
-        $pendaftaran = Peserta::query()
-            ->with(['angkatan:id,nama,kode', 'peninjau:id,name'])
+        $pendaftaran = Pendaftaran::query()
+            // Jumlah pendaftaran orangnya ikut dimuat, supaya view bisa menandai
+            // pendaftaran ulang tanpa query tambahan per baris.
+            ->with([
+                'peserta' => fn ($q) => $q->withCount('pendaftaran'),
+                'angkatan:id,nama,kode',
+                'peninjau:id,name',
+            ])
             ->when($this->status !== '', fn ($q) => $q->where('status_pendaftaran', $this->status))
             ->when($this->search !== '', function ($q) {
                 $term = '%'.$this->search.'%';
                 $q->where(fn ($sub) => $sub
-                    ->where('nama', 'like', $term)
-                    ->orWhere('kode_pendaftaran', 'like', $term)
-                    ->orWhere('nik', 'like', $term)
-                    ->orWhere('email', 'like', $term)
-                    ->orWhere('no_hp', 'like', $term));
+                    ->where('kode_pendaftaran', 'like', $term)
+                    ->orWhere('nomor_induk', 'like', $term)
+                    ->orWhereHas('peserta', fn ($p) => $p
+                        ->where('nama', 'like', $term)
+                        ->orWhere('nik', 'like', $term)
+                        ->orWhere('email', 'like', $term)
+                        ->orWhere('no_hp', 'like', $term)));
             })
             ->when($this->angkatan !== '', fn ($q) => $q->where('angkatan_id', $this->angkatan))
             ->when($this->sumber !== '', fn ($q) => $q->where('sumber_pendaftaran', $this->sumber))
+            ->when($this->riwayat === 'ulang', fn ($q) => $q->whereHas('peserta.pendaftaran', null, '>', 1))
+            ->when($this->riwayat === 'baru', fn ($q) => $q->whereHas('peserta.pendaftaran', null, '=', 1))
             ->when($this->dari !== '', fn ($q) => $q->whereDate('didaftarkan_pada', '>=', $this->dari))
             ->when($this->sampai !== '', fn ($q) => $q->whereDate('didaftarkan_pada', '<=', $this->sampai))
             ->orderByDesc('didaftarkan_pada')

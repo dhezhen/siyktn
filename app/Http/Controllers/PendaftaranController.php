@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Angkatan;
 use App\Services\PendaftaranService;
+use App\Support\KelayakanPendaftaran;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 /**
  * Formulir pendaftaran mandiri — dapat diakses tanpa login.
@@ -30,7 +31,7 @@ class PendaftaranController extends Controller
         $data = $request->validate([
             'angkatan_id' => ['required', Rule::in($angkatanTerbuka->pluck('id'))],
             'nama' => ['required', 'string', 'max:100'],
-            'nik' => ['required', 'digits:16', 'unique:peserta,nik'],
+            'nik' => ['required', 'digits:16'],
             'jenis_kelamin' => ['required', Rule::in(['L', 'P'])],
             'tempat_lahir' => ['required', 'string', 'max:80'],
             'tanggal_lahir' => ['required', 'date', 'before:today'],
@@ -39,11 +40,10 @@ class PendaftaranController extends Controller
             'email' => ['required', 'email', 'max:150'],
             'nama_wali' => ['required', 'string', 'max:100'],
             'no_hp_wali' => ['required', 'string', 'max:25'],
-            'ktp' => ['required', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
+            'ktp' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
             'persetujuan' => ['accepted'],
         ], [
             'nik.digits' => 'NIK harus terdiri dari 16 angka sesuai yang tertera di KTP.',
-            'nik.unique' => 'NIK ini sudah pernah didaftarkan. Hubungi kami bila Anda merasa ini keliru.',
             'angkatan_id.in' => 'Angkatan yang Anda pilih sudah tidak menerima pendaftaran.',
             'ktp.mimes' => 'Berkas KTP harus berupa gambar (JPG/PNG) atau PDF.',
             'ktp.max' => 'Ukuran berkas KTP maksimal 2 MB.',
@@ -64,18 +64,54 @@ class PendaftaranController extends Controller
             'ktp' => 'berkas KTP',
         ]);
 
-        $data['ktp_path'] = $this->pendaftaran->simpanKtp($request->file('ktp'));
-        unset($data['ktp'], $data['persetujuan']);
+        $kelayakan = KelayakanPendaftaran::periksa($data['nik'], (int) $data['angkatan_id']);
 
-        $peserta = $this->pendaftaran->daftarkan(array_merge($data, [
-            'status' => 'aktif',
-            'status_pendaftaran' => 'menunggu',
-        ]), sumber: 'mandiri');
+        if (! $kelayakan->boleh) {
+            throw ValidationException::withMessages(['nik' => $kelayakan->alasan]);
+        }
+
+        $lama = $kelayakan->peserta;
+
+        // Pengaman privasi: NIK saja tidak cukup untuk mengaku sebagai orang
+        // yang sudah terdaftar. Tanggal lahirnya harus cocok, supaya formulir
+        // publik ini tidak bisa dipakai memancing data orang lain.
+        if ($lama && $lama->tanggal_lahir?->toDateString() !== $data['tanggal_lahir']) {
+            throw ValidationException::withMessages([
+                'tanggal_lahir' => 'Data yang Anda masukkan tidak cocok dengan catatan kami. '
+                    .'Periksa kembali NIK dan tanggal lahir Anda, atau hubungi pihak lembaga.',
+            ]);
+        }
+
+        // Pendaftar baru wajib melampirkan KTP. Pendaftar lama yang KTP-nya
+        // sudah tersimpan boleh melewatinya.
+        if (! $request->hasFile('ktp') && ! $lama?->ktp_path) {
+            throw ValidationException::withMessages([
+                'ktp' => 'Berkas KTP wajib dilampirkan.',
+            ]);
+        }
+
+        $dataPeserta = collect($data)
+            ->except(['angkatan_id', 'ktp', 'persetujuan'])
+            ->put('ktp_path', $request->hasFile('ktp')
+                ? $this->pendaftaran->simpanKtp($request->file('ktp'))
+                : null)
+            ->all();
+
+        $pendaftaran = $this->pendaftaran->daftarkan(
+            dataPeserta: $dataPeserta,
+            dataPendaftaran: [
+                'angkatan_id' => $data['angkatan_id'],
+                'status_pendaftaran' => 'menunggu',
+                'status' => 'aktif',
+            ],
+            sumber: 'mandiri',
+        );
 
         return redirect()
             ->route('pendaftaran.sukses')
-            ->with('kode_pendaftaran', $peserta->kode_pendaftaran)
-            ->with('email_pendaftar', $peserta->email);
+            ->with('kode_pendaftaran', $pendaftaran->kode_pendaftaran)
+            ->with('email_pendaftar', $data['email'])
+            ->with('pendaftaran_ulang', $kelayakan->pendaftaranUlang);
     }
 
     public function sukses(Request $request): View|RedirectResponse
@@ -88,6 +124,7 @@ class PendaftaranController extends Controller
         return view('pendaftaran.sukses', [
             'kode' => $request->session()->get('kode_pendaftaran'),
             'email' => $request->session()->get('email_pendaftar'),
+            'ulang' => (bool) $request->session()->get('pendaftaran_ulang'),
         ]);
     }
 }

@@ -101,6 +101,43 @@ Akun bawaan (kata sandi semua: `password`):
 | 5 | Log aktivitas, pengaturan aplikasi, dashboard | ✅ |
 | 6 | Modul pertama: Angkatan & Peserta | ✅ |
 | 7 | Pendaftaran mandiri peserta + verifikasi + email | ✅ |
+| 8 | Pemisahan peserta (orang) dan pendaftaran (per angkatan) | ✅ |
+
+## Model data peserta
+
+Dua hal yang mudah tertukar, sengaja dipisah:
+
+| Tabel | Artinya | Aturan |
+|---|---|---|
+| `peserta` | **orang**, satu baris seumur hidup | NIK unik, KTP & foto melekat di sini |
+| `pendaftaran` | **keikutsertaan** pada satu angkatan | `unique(peserta_id, angkatan_id)` |
+
+Satu orang boleh punya banyak pendaftaran. Alumni yang ikut angkatan berikutnya
+tidak menghasilkan orang kembar — barisnya dipakai ulang dan datanya diperbarui.
+
+### Kapan seseorang boleh mendaftar lagi
+
+Aturan tunggalnya ada di `App\Support\KelayakanPendaftaran`, dipakai bersama oleh
+formulir publik dan input petugas.
+
+| Kondisi NIK di sistem | Boleh? | Alasan |
+|---|---|---|
+| Belum pernah ada | ✅ | pendaftar baru |
+| Punya pendaftaran `menunggu` | ❌ | berkas sedang diproses |
+| Punya pendaftaran `disetujui` + `aktif` | ❌ | masih aktif di angkatan berjalan |
+| Pernah `lulus` | ✅ | alumni, boleh ambil program berikutnya |
+| Pernah `keluar` | ✅ | ditandai di antrean supaya petugas tahu |
+| Pernah `ditolak` | ✅ | memang diminta mendaftar ulang |
+| Sudah terdaftar di angkatan yang sama | ❌ | duplikat sungguhan |
+| `boleh_mendaftar_lagi = false` | ❌ | dicekal, alasannya tercatat internal |
+
+### Pengaman privasi formulir publik
+
+Formulir tidak pernah memberi tahu siapa pemilik sebuah NIK. Untuk memakai ulang
+data lama, pendaftar harus mengisi **NIK dan tanggal lahir yang keduanya cocok**.
+Bila NIK cocok tapi tanggal lahir tidak, pendaftaran ditolak dengan pesan netral.
+Jangan menambahkan endpoint pencarian NIK di halaman publik — itu membuat siapa
+pun bisa memancing nama orang lain.
 
 ## Pendaftaran peserta
 
@@ -108,7 +145,9 @@ Alur lengkapnya:
 
 1. Calon peserta membuka **`/pendaftaran`** (publik, tanpa login), mengisi data
    dan melampirkan KTP.
-2. Sistem membuat kode tanda terima `REG-{tahun}-{urut}` dan mengirim email:
+2. Bila NIK dikenal (dan tanggal lahirnya cocok), data orangnya dipakai ulang dan
+   KTP tidak perlu diunggah lagi. Sistem membuat kode tanda terima
+   `REG-{tahun}-{urut}` dan mengirim email:
    satu ke pendaftar, satu ke tiap petugas pemilik permission `peserta.approve`
    (plus seluruh super admin), dan salinan ke *Email Resmi* di Pengaturan Aplikasi
    bila kolomnya diisi.
@@ -120,7 +159,11 @@ Alur lengkapnya:
 
 Peserta yang diinput petugas lewat **Peserta &rarr; Tambah** melewati alur yang
 sama (`PendaftaranService::daftarkan`), hanya saja langsung berstatus disetujui —
-sehingga emailnya tetap terkirim.
+sehingga emailnya tetap terkirim dan aturan kelayakan tetap berlaku.
+
+Pendaftaran ulang ditandai di antrean peninjauan (`pendaftaran ke-N`) beserta
+tautan ke riwayat orangnya, supaya petugas tidak memeriksa ulang berkas yang
+sudah pernah diverifikasi.
 
 ### Berkas KTP
 
@@ -148,6 +191,7 @@ tersimpan dan errornya dicatat di log.
 
 - Impor CSV untuk peserta (ekspor sudah ada).
 - Halaman cek status pendaftaran mandiri memakai kode `REG-…`.
+- Nomor induk seumur hidup per orang (saat ini nomor induk melekat per angkatan).
 - Cetak PDF (kartu peserta, rekap angkatan) — perlu `barryvdh/laravel-dompdf`.
 - 2FA dan riwayat login per perangkat.
 - Backup database terjadwal (`spatie/laravel-backup`).

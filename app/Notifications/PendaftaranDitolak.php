@@ -2,7 +2,7 @@
 
 namespace App\Notifications;
 
-use App\Models\Peserta;
+use App\Models\Pendaftaran;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -12,7 +12,7 @@ class PendaftaranDitolak extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    public function __construct(public Peserta $peserta) {}
+    public function __construct(public Pendaftaran $pendaftaran) {}
 
     public function via(object $notifiable): array
     {
@@ -24,14 +24,14 @@ class PendaftaranDitolak extends Notification implements ShouldQueue
         $lembaga = setting('organization', setting('app_name', config('app.name')));
 
         $mail = (new MailMessage)
-            ->subject('Hasil Verifikasi Pendaftaran — '.$this->peserta->kode_pendaftaran)
-            ->greeting('Assalamualaikum, '.$this->peserta->nama)
+            ->subject('Hasil Verifikasi Pendaftaran — '.$this->pendaftaran->kode_pendaftaran)
+            ->greeting('Assalamualaikum, '.$this->pendaftaran->peserta->nama)
             ->line("Terima kasih telah mendaftar di {$lembaga}.")
             ->line('Setelah kami periksa, pendaftaran Anda dengan kode
-                    **'.$this->peserta->kode_pendaftaran.'** belum dapat kami setujui.');
+                    **'.$this->pendaftaran->kode_pendaftaran.'** belum dapat kami setujui.');
 
-        if ($this->peserta->alasan_penolakan) {
-            $mail->line('**Alasan:** '.$this->peserta->alasan_penolakan);
+        if ($this->pendaftaran->alasan_penolakan) {
+            $mail->line('**Alasan:** '.$this->pendaftaran->alasan_penolakan);
         }
 
         return $mail

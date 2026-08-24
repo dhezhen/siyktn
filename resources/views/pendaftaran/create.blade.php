@@ -14,7 +14,7 @@
         <div class="mx-auto mb-3 grid size-14 place-items-center rounded-xl bg-emerald-600 text-2xl font-bold text-white">
             {{ Str::substr(setting('app_name', config('app.name')), 0, 1) }}
         </div>
-        <h1 class="text-2xl font-semibold text-slate-900">Pendaftaran Peserta Baru</h1>
+        <h1 class="text-2xl font-semibold text-slate-900">Pendaftaran Peserta</h1>
         <p class="mt-2 text-sm text-slate-600">
             {{ setting('organization', setting('app_name', config('app.name'))) }}
         </p>
@@ -90,13 +90,19 @@
             </x-card>
 
             <x-card title="Lampiran KTP" subtitle="Wajib, untuk verifikasi identitas.">
-                <x-input name="ktp" type="file" label="Foto atau Scan KTP" required
+                <x-input name="ktp" type="file" label="Foto atau Scan KTP"
                          accept=".jpg,.jpeg,.png,.pdf"
                          hint="Format JPG, PNG, atau PDF. Maksimal 2 MB. Pastikan NIK dan nama terbaca jelas." />
 
                 <p class="mt-3 rounded-lg bg-sky-50 p-3 text-xs leading-relaxed text-sky-900">
                     Berkas KTP Anda disimpan secara tertutup dan hanya dapat dibuka oleh petugas
                     yang berwenang melakukan verifikasi. Berkas ini tidak dapat diakses publik.
+                </p>
+
+                <p class="mt-2 rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
+                    <span class="font-medium text-slate-800">Pernah mendaftar sebelumnya?</span>
+                    Isi NIK dan tanggal lahir persis seperti pendaftaran terdahulu. Data Anda akan
+                    dipakai kembali, dan Anda tidak perlu mengunggah ulang KTP.
                 </p>
             </x-card>
 

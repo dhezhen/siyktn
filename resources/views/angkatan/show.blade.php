@@ -14,7 +14,7 @@
 
     <div class="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         @foreach ([
-            ['label' => 'Total Peserta', 'value' => $angkatan->peserta_count, 'icon' => 'users'],
+            ['label' => 'Total Peserta', 'value' => $angkatan->pendaftaran_count, 'icon' => 'users'],
             ['label' => 'Peserta Aktif', 'value' => $angkatan->peserta_aktif_count, 'icon' => 'check-circle'],
             ['label' => 'Sudah Lulus', 'value' => $angkatan->peserta_lulus_count, 'icon' => 'shield'],
             ['label' => 'Sisa Kuota', 'value' => $angkatan->sisa_kuota ?? 'Tak dibatasi', 'icon' => 'list'],
@@ -46,16 +46,27 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                        @forelse ($peserta as $item)
+                        @forelse ($pendaftaran as $item)
                             <tr class="hover:bg-slate-50">
-                                <td class="px-5 py-3 font-mono text-xs text-slate-600">{{ $item->nomor_induk }}</td>
+                                <td class="px-5 py-3 font-mono text-xs text-slate-600">{{ $item->nomor_induk ?: '—' }}</td>
                                 <td class="px-5 py-3">
-                                    <a href="{{ route('peserta.show', $item) }}" class="font-medium text-emerald-700 hover:underline">
-                                        {{ $item->nama }}
-                                    </a>
+                                    @if ($item->peserta)
+                                        <a href="{{ route('peserta.show', $item->peserta) }}" class="font-medium text-emerald-700 hover:underline">
+                                            {{ $item->peserta->nama }}
+                                        </a>
+                                    @else
+                                        <span class="text-slate-400">—</span>
+                                    @endif
                                 </td>
-                                <td class="px-5 py-3 text-slate-600">{{ $item->jenis_kelamin }}</td>
-                                <td class="px-5 py-3"><x-badge :color="$item->status_color">{{ Str::title($item->status) }}</x-badge></td>
+                                <td class="px-5 py-3 text-slate-600">{{ $item->peserta?->jenis_kelamin ?? '—' }}</td>
+                                <td class="px-5 py-3">
+                                    <div class="flex flex-col items-start gap-1">
+                                        <x-badge :color="$item->status_pendaftaran_color">{{ $item->status_pendaftaran_label }}</x-badge>
+                                        @if ($item->status_pendaftaran === 'disetujui')
+                                            <x-badge :color="$item->status_color">{{ $item->status_label }}</x-badge>
+                                        @endif
+                                    </div>
+                                </td>
                             </tr>
                         @empty
                             <tr>
@@ -69,8 +80,8 @@
                 </table>
             </div>
 
-            @if ($peserta->hasPages())
-                <div class="border-t border-slate-200 px-5 py-3">{{ $peserta->links() }}</div>
+            @if ($pendaftaran->hasPages())
+                <div class="border-t border-slate-200 px-5 py-3">{{ $pendaftaran->links() }}</div>
             @endif
         </x-card>
 

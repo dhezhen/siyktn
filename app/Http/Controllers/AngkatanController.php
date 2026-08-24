@@ -25,7 +25,7 @@ class AngkatanController extends Controller implements HasMiddleware
     public function index(Request $request): View
     {
         $angkatan = Angkatan::query()
-            ->withCount(['peserta as peserta_aktif_count' => fn ($q) => $q->where('status', 'aktif')])
+            ->withCount(['pendaftaran as peserta_aktif_count' => fn ($q) => $q->aktif()])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('q'), fn ($q) => $q->where(fn ($sub) => $sub
                 ->where('nama', 'like', '%'.$request->string('q').'%')
@@ -41,14 +41,17 @@ class AngkatanController extends Controller implements HasMiddleware
     public function show(Angkatan $angkatan): View
     {
         $angkatan->loadCount([
-            'peserta',
-            'peserta as peserta_aktif_count' => fn ($q) => $q->where('status', 'aktif'),
-            'peserta as peserta_lulus_count' => fn ($q) => $q->where('status', 'lulus'),
+            'pendaftaran',
+            'pendaftaran as peserta_aktif_count' => fn ($q) => $q->aktif(),
+            'pendaftaran as peserta_lulus_count' => fn ($q) => $q->where('status', 'lulus'),
         ]);
 
         return view('angkatan.show', [
             'angkatan' => $angkatan,
-            'peserta' => $angkatan->peserta()->orderBy('nomor_induk')->paginate(20),
+            'pendaftaran' => $angkatan->pendaftaran()
+                ->with('peserta')
+                ->orderByRaw('nomor_induk IS NULL, nomor_induk')
+                ->paginate(20),
         ]);
     }
 
@@ -81,9 +84,9 @@ class AngkatanController extends Controller implements HasMiddleware
     public function destroy(Angkatan $angkatan): RedirectResponse
     {
         // Angkatan yang sudah punya peserta tidak boleh hilang begitu saja.
-        if ($angkatan->peserta()->exists()) {
+        if ($angkatan->pendaftaran()->exists()) {
             return back()->with('error',
-                "Angkatan {$angkatan->nama} masih memiliki {$angkatan->peserta()->count()} peserta. Pindahkan pesertanya terlebih dahulu.");
+                "Angkatan {$angkatan->nama} masih memiliki {$angkatan->pendaftaran()->count()} peserta. Pindahkan pesertanya terlebih dahulu.");
         }
 
         $nama = $angkatan->nama;

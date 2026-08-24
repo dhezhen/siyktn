@@ -94,11 +94,15 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
     Route::get('peserta/ekspor', [PesertaController::class, 'export'])->name('peserta.export');
     Route::resource('peserta', PesertaController::class)->parameters(['peserta' => 'peserta']);
 
-    // Peninjauan pendaftaran
+    /*
+     | Peninjauan pendaftaran.
+     | Nama parameter harus sama dengan nama variabel di controller, jika tidak
+     | route model binding gagal tanpa pesan apa pun.
+     */
     Route::get('pendaftaran-masuk', [PendaftaranAdminController::class, 'index'])->name('pendaftaran.index');
-    Route::post('pendaftaran-masuk/{peserta}/setujui', [PendaftaranAdminController::class, 'setujui'])->name('pendaftaran.setujui');
-    Route::post('pendaftaran-masuk/{peserta}/tolak', [PendaftaranAdminController::class, 'tolak'])->name('pendaftaran.tolak');
-    Route::get('pendaftaran-masuk/{peserta}/ktp', [PendaftaranAdminController::class, 'ktp'])->name('pendaftaran.ktp');
+    Route::post('pendaftaran-masuk/{pendaftaran}/setujui', [PendaftaranAdminController::class, 'setujui'])->name('pendaftaran.setujui');
+    Route::post('pendaftaran-masuk/{pendaftaran}/tolak', [PendaftaranAdminController::class, 'tolak'])->name('pendaftaran.tolak');
+    Route::get('peserta/{peserta}/ktp', [PendaftaranAdminController::class, 'ktp'])->name('pendaftaran.ktp');
 
     /*
      | Pengaturan sistem

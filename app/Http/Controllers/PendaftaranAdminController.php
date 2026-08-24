@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Pendaftaran;
 use App\Models\Peserta;
 use App\Services\PendaftaranService;
 use Illuminate\Http\RedirectResponse;
@@ -33,21 +34,22 @@ class PendaftaranAdminController extends Controller implements HasMiddleware
         return view('pendaftaran.index');
     }
 
-    public function setujui(Peserta $peserta): RedirectResponse
+    public function setujui(Pendaftaran $pendaftaran): RedirectResponse
     {
-        if (! $peserta->isMenunggu()) {
+        if (! $pendaftaran->isMenunggu()) {
             return back()->with('warning', 'Pendaftaran ini sudah pernah ditinjau.');
         }
 
-        $this->pendaftaran->setujui($peserta, Auth::user());
+        $this->pendaftaran->setujui($pendaftaran, Auth::user());
+        $nama = $pendaftaran->peserta->nama;
 
         return back()->with('success',
-            "Pendaftaran {$peserta->nama} disetujui. Nomor induk {$peserta->fresh()->nomor_induk} sudah dikirim lewat email.");
+            "Pendaftaran {$nama} disetujui. Nomor induk {$pendaftaran->fresh()->nomor_induk} sudah dikirim lewat email.");
     }
 
-    public function tolak(Request $request, Peserta $peserta): RedirectResponse
+    public function tolak(Request $request, Pendaftaran $pendaftaran): RedirectResponse
     {
-        if (! $peserta->isMenunggu()) {
+        if (! $pendaftaran->isMenunggu()) {
             return back()->with('warning', 'Pendaftaran ini sudah pernah ditinjau.');
         }
 
@@ -60,9 +62,10 @@ class PendaftaranAdminController extends Controller implements HasMiddleware
             ['alasan_penolakan' => 'alasan penolakan']
         );
 
-        $this->pendaftaran->tolak($peserta, Auth::user(), $data['alasan_penolakan']);
+        $this->pendaftaran->tolak($pendaftaran, Auth::user(), $data['alasan_penolakan']);
 
-        return back()->with('success', "Pendaftaran {$peserta->nama} ditolak dan pemberitahuan sudah dikirim.");
+        return back()->with('success',
+            "Pendaftaran {$pendaftaran->peserta->nama} ditolak dan pemberitahuan sudah dikirim.");
     }
 
     /**
@@ -78,7 +81,7 @@ class PendaftaranAdminController extends Controller implements HasMiddleware
 
         return Storage::disk('local')->response(
             $peserta->ktp_path,
-            'ktp-'.($peserta->kode_pendaftaran ?: $peserta->id).'.'.pathinfo($peserta->ktp_path, PATHINFO_EXTENSION),
+            'ktp-'.$peserta->id.'.'.pathinfo($peserta->ktp_path, PATHINFO_EXTENSION),
             ['Content-Disposition' => 'inline']
         );
     }

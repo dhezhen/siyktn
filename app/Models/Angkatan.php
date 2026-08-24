@@ -6,6 +6,7 @@ use App\Models\Concerns\RecordsActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Angkatan extends Model
@@ -33,9 +34,24 @@ class Angkatan extends Model
         ];
     }
 
-    public function peserta(): HasMany
+    public function pendaftaran(): HasMany
     {
-        return $this->hasMany(Peserta::class);
+        return $this->hasMany(Pendaftaran::class);
+    }
+
+    /**
+     * Orang-orang yang terdaftar di angkatan ini, lewat tabel pendaftaran.
+     */
+    public function peserta(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Peserta::class,
+            Pendaftaran::class,
+            'angkatan_id',   // kolom di pendaftaran
+            'id',            // kolom di peserta
+            'id',            // kolom di angkatan
+            'peserta_id'     // kolom di pendaftaran
+        );
     }
 
     public function scopeBerjalan(Builder $query): Builder
@@ -52,7 +68,7 @@ class Angkatan extends Model
             return null;
         }
 
-        return max(0, $this->kuota - $this->peserta()->where('status', 'aktif')->count());
+        return max(0, $this->kuota - $this->pendaftaran()->aktif()->count());
     }
 
     public function getStatusLabelAttribute(): string
