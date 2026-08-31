@@ -25,12 +25,13 @@ class Peserta extends Model
 
     protected $table = 'peserta';
 
-    protected array $activityFields = ['nama', 'nik', 'no_hp', 'email', 'boleh_mendaftar_lagi'];
+    protected array $activityFields = ['nama', 'nik', 'kewarganegaraan', 'negara', 'provinsi', 'kabupaten_kota', 'no_hp', 'email', 'boleh_mendaftar_lagi'];
 
     protected string $activityLabel = 'Peserta';
 
     protected $fillable = [
         'nama', 'nik', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir',
+        'kewarganegaraan', 'negara', 'provinsi', 'kabupaten_kota',
         'alamat', 'no_hp', 'email', 'nama_wali', 'no_hp_wali',
         'foto', 'ktp_path', 'boleh_mendaftar_lagi', 'alasan_cekal', 'user_id',
     ];
@@ -95,6 +96,32 @@ class Peserta extends Model
     public function getJenisKelaminLabelAttribute(): string
     {
         return $this->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan';
+    }
+
+    public function getAlamatLengkapFormattedAttribute(): string
+    {
+        $bagian = [];
+
+        if ($this->alamat) {
+            $bagian[] = $this->alamat;
+        }
+
+        if ($this->kabupaten_kota) {
+            $bagian[] = $this->kabupaten_kota;
+        }
+
+        if ($this->kewarganegaraan === 'WNA') {
+            if ($this->negara && $this->negara !== 'Indonesia') {
+                $bagian[] = $this->negara;
+            }
+        } else {
+            if ($this->provinsi) {
+                $bagian[] = $this->provinsi;
+            }
+            $bagian[] = 'Indonesia';
+        }
+
+        return implode(', ', array_filter($bagian));
     }
 
     public function isAlumni(): bool

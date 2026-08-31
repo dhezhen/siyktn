@@ -73,7 +73,7 @@
                             <option value="">— Belum ditugaskan —</option>
                             @foreach ($daftarMuhaffizh as $item)
                                 <option value="{{ $item->id }}" @selected(old('muhaffizh_id', $halaqah->muhaffizh_id) == $item->id)>
-                                    {{ $item->nama }} ({{ $item->kode }})
+                                    {{ $item->nama }} ({{ $item->kode }}) — {{ $item->jenis_kelamin === 'L' ? 'Ustadz (L)' : 'Ustadzah (P)' }}
                                 </option>
                             @endforeach
                         </x-select>

@@ -23,7 +23,9 @@ class MenuSeeder extends Seeder
 
             ['title' => 'Data Tahfidz', 'icon' => 'identification', 'type' => 'header', 'children' => [
                 ['title' => 'Pendaftaran', 'icon' => 'info', 'type' => 'route', 'route' => 'pendaftaran.index', 'permission' => 'peserta.approve'],
+                ['title' => 'Presensi Kehadiran', 'icon' => 'camera', 'type' => 'route', 'route' => 'pendaftaran.presensi', 'permission' => 'peserta.approve'],
                 ['title' => 'Angkatan', 'icon' => 'list', 'type' => 'route', 'route' => 'angkatan.index', 'permission' => 'angkatan.view'],
+                ['title' => 'Paket Program', 'icon' => 'document-text', 'type' => 'route', 'route' => 'program.index', 'permission' => 'program.view'],
                 ['title' => 'Peserta', 'icon' => 'users', 'type' => 'route', 'route' => 'peserta.index', 'permission' => 'peserta.view'],
                 ['title' => 'Muhaffizh', 'icon' => 'academic', 'type' => 'route', 'route' => 'muhaffizh.index', 'permission' => 'muhaffizh.view'],
             ]],

@@ -9,7 +9,7 @@
 
 @php
     $variants = [
-        'primary'   => 'bg-emerald-600 text-white shadow-sm hover:bg-emerald-700 focus-visible:outline-emerald-600',
+        'primary'   => 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/20 hover:from-emerald-500 hover:to-teal-500 hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-emerald-600 transition-all',
         'secondary' => 'bg-white text-slate-700 shadow-sm ring-1 ring-slate-300 hover:bg-slate-50 hover:ring-slate-400 focus-visible:outline-slate-500',
         'danger'    => 'bg-rose-600 text-white shadow-sm hover:bg-rose-700 focus-visible:outline-rose-600',
         'ghost'     => 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-slate-500',

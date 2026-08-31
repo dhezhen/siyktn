@@ -67,9 +67,14 @@ class KuotaGenderTest extends TestCase
         // Putra pertama mendaftar
         $respPutra1 = $this->post(route('pendaftaran.store'), [
             'angkatan_id' => $angkatan->id,
+            'paket_program' => '3_pekan',
             'nama' => 'Ahmad Putra 1',
             'nik' => '3208010101010001',
             'jenis_kelamin' => 'L',
+            'kewarganegaraan' => 'WNI',
+            'negara' => 'Indonesia',
+            'provinsi' => 'Jawa Barat',
+            'kabupaten_kota' => 'Kab. Kuningan',
             'tempat_lahir' => 'Kuningan',
             'tanggal_lahir' => '2005-01-01',
             'alamat' => 'Alamat Putra 1',
@@ -87,9 +92,14 @@ class KuotaGenderTest extends TestCase
         // Putra kedua mendaftar -> Harus gagal karena kuota putra (1) sudah penuh
         $respPutra2 = $this->post(route('pendaftaran.store'), [
             'angkatan_id' => $angkatan->id,
+            'paket_program' => '3_pekan',
             'nama' => 'Ali Putra 2',
             'nik' => '3208010101010002',
             'jenis_kelamin' => 'L',
+            'kewarganegaraan' => 'WNI',
+            'negara' => 'Indonesia',
+            'provinsi' => 'Jawa Barat',
+            'kabupaten_kota' => 'Kab. Kuningan',
             'tempat_lahir' => 'Kuningan',
             'tanggal_lahir' => '2005-02-02',
             'alamat' => 'Alamat Putra 2',
@@ -106,9 +116,14 @@ class KuotaGenderTest extends TestCase
         // Putri pertama mendaftar -> Harus berhasil karena kuota putri (1) masih sisa
         $respPutri1 = $this->post(route('pendaftaran.store'), [
             'angkatan_id' => $angkatan->id,
+            'paket_program' => '3_pekan',
             'nama' => 'Siti Putri 1',
             'nik' => '3208010101010003',
             'jenis_kelamin' => 'P',
+            'kewarganegaraan' => 'WNI',
+            'negara' => 'Indonesia',
+            'provinsi' => 'Jawa Barat',
+            'kabupaten_kota' => 'Kota Cirebon',
             'tempat_lahir' => 'Cirebon',
             'tanggal_lahir' => '2005-03-03',
             'alamat' => 'Alamat Putri 1',

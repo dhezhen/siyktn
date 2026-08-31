@@ -66,10 +66,11 @@
                     @forelse ($halaqah as $item)
                         <tr class="tabel-baris hover:bg-slate-50">
                             <td class="px-5 py-3">
-                                <p class="font-medium text-slate-900">{{ $item->nama }}</p>
-                                <p class="text-xs text-slate-500">
-                                    {{ $item->kode }} &middot; {{ $item->jenis_kelamin_label }}
-                                </p>
+                                <div class="flex items-center gap-2">
+                                    <p class="font-medium text-slate-900">{{ $item->nama }}</p>
+                                    <x-badge :color="$item->jenis_kelamin === 'L' ? 'sky' : 'rose'">{{ $item->jenis_kelamin_label }}</x-badge>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-0.5">{{ $item->kode }}</p>
                             </td>
 
                             <td class="px-5 py-3 text-slate-700">

@@ -72,10 +72,35 @@ class PendaftaranService
                 $peserta = Peserta::create($dataPeserta);
             }
 
+            $programId = $dataPendaftaran['program_id'] ?? null;
+            $paketKey = $dataPendaftaran['paket_program'] ?? null;
+            $programObj = null;
+
+            if ($programId) {
+                $programObj = \App\Models\Program::find($programId);
+            } elseif (is_numeric($paketKey)) {
+                $programObj = \App\Models\Program::find((int) $paketKey);
+            } elseif ($paketKey) {
+                $programObj = \App\Models\Program::where('kode', $paketKey)->first();
+            }
+
+            if ($programObj) {
+                $programId = $programObj->id;
+                $biayaProgram = $programObj->biaya_program;
+                $biayaPendaftaran = $programObj->biaya_pendaftaran;
+            } else {
+                $biayaProgram = Pendaftaran::PAKET_PROGRAM[$paketKey]['biaya'] ?? ($dataPendaftaran['biaya_program'] ?? 0);
+                $biayaPendaftaran = $dataPendaftaran['biaya_pendaftaran'] ?? 100000;
+            }
+
             $pendaftaran = Pendaftaran::create(array_merge($dataPendaftaran, [
                 'peserta_id' => $peserta->id,
+                'program_id' => $programId,
                 'kode_pendaftaran' => Pendaftaran::kodePendaftaranBerikutnya(),
                 'sumber_pendaftaran' => $sumber,
+                'paket_program' => $paketKey,
+                'biaya_program' => $biayaProgram,
+                'biaya_pendaftaran' => $biayaPendaftaran,
                 'didaftarkan_pada' => now(),
             ]));
 

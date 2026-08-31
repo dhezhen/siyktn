@@ -49,6 +49,6 @@ class PendaftaranBaruMasuk extends Notification implements ShouldQueue
             ->line('Angkatan: '.($this->pendaftaran->angkatan?->nama ?? '—'))
             ->line('Nomor HP: '.($peserta->no_hp ?: '—'))
             ->action('Tinjau Pendaftaran', route('pendaftaran.index'))
-            ->line('Berkas KTP tersimpan di sistem dan hanya bisa dibuka oleh petugas berwenang.');
+            ->line('Berkas KTP/KK tersimpan di sistem dan hanya bisa dibuka oleh petugas berwenang.');
     }
 }

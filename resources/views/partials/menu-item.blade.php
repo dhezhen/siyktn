@@ -13,7 +13,7 @@
         Dibiarkan sebagai label supaya susunan yang pernah diatur manual
         tidak berubah bentuk.
     --}}
-    <p class="px-3 pt-5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+    <p class="px-3 pt-5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-300/70">
         {{ $item['title'] }}
     </p>
 

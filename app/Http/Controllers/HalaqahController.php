@@ -424,6 +424,17 @@ class HalaqahController extends Controller implements HasMiddleware
 
         $data['is_aktif'] = $request->boolean('is_aktif');
 
+        if ($data['muhaffizh_id']) {
+            $muhaffizh = Muhaffizh::find($data['muhaffizh_id']);
+            if ($muhaffizh && $muhaffizh->jenis_kelamin !== $data['jenis_kelamin']) {
+                $labelHalaqah = $data['jenis_kelamin'] === 'L' ? 'Ikhwan (Laki-laki)' : 'Akhwat (Perempuan)';
+                $labelMuhaffizh = $muhaffizh->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan';
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'muhaffizh_id' => "Halaqah {$labelHalaqah} hanya dapat diampu oleh pengampu berkategori sama (Muhaffizh yang Anda pilih berjenis kelamin {$labelMuhaffizh}).",
+                ]);
+            }
+        }
+
         return $data;
     }
 }

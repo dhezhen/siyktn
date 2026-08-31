@@ -1,13 +1,16 @@
 @php($menuItems = \App\Support\Menu::items())
 
 <aside x-cloak
-       :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
-       class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-slate-900 text-slate-300 shadow-xl transition-transform duration-300 ease-out lg:translate-x-0 lg:shadow-none">
+       :class="{
+           'translate-x-0': sidebarOpen,
+           '-translate-x-full': !sidebarOpen,
+           'lg:translate-x-0': desktopSidebarOpen,
+           'lg:-translate-x-full': !desktopSidebarOpen
+       }"
+       class="fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-emerald-950 text-emerald-100/70 shadow-xl transition-transform duration-300 ease-out lg:shadow-none">
 
     <div class="flex h-16 shrink-0 items-center gap-3 border-b border-white/10 px-5">
-        <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-emerald-600 font-bold text-white">
-            {{ Str::substr(setting('app_name', config('app.name')), 0, 1) }}
-        </span>
+        <img src="{{ asset('logo.png') }}" alt="{{ setting('app_name', config('app.name')) }}" class="size-9 shrink-0 object-contain drop-shadow-sm">
         <span class="truncate font-semibold text-white">{{ setting('app_name', config('app.name')) }}</span>
         <button type="button" @click="sidebarOpen = false" aria-label="Tutup menu"
                 class="ml-auto rounded-lg p-1.5 text-slate-400 transition duration-150 hover:bg-white/10 hover:text-white active:scale-90 lg:hidden">
@@ -23,7 +26,7 @@
         @endforelse
     </nav>
 
-    <div class="border-t border-white/10 px-5 py-3 text-xs text-slate-500">
+    <div class="border-t border-white/10 px-5 py-3 text-xs text-emerald-300/60">
         Versi {{ config('app.version') }}
     </div>
 </aside>

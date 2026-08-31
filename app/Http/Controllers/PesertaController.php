@@ -165,7 +165,7 @@ class PesertaController extends Controller implements HasMiddleware
             fwrite($handle, "\xEF\xBB\xBF");
             fputcsv($handle, [
                 'Kode Pendaftaran', 'Nomor Induk', 'Nama', 'NIK', 'Jenis Kelamin', 'Angkatan',
-                'Tempat Lahir', 'Tanggal Lahir', 'No HP', 'Email', 'Nama Wali', 'No HP Wali',
+                'Tempat Lahir', 'Tanggal Lahir', 'Usia', 'No HP', 'Email', 'Nama Wali', 'No HP Wali',
                 'Tanggal Masuk', 'Status', 'Status Pendaftaran', 'Sumber', 'Didaftarkan Pada',
             ]);
 
@@ -188,6 +188,7 @@ class PesertaController extends Controller implements HasMiddleware
                             $daftar->angkatan?->nama,
                             $peserta?->tempat_lahir,
                             $peserta?->tanggal_lahir?->format('Y-m-d'),
+                            $peserta?->tanggal_lahir?->age,
                             $peserta?->no_hp,
                             $peserta?->email,
                             $peserta?->nama_wali,
@@ -226,6 +227,10 @@ class PesertaController extends Controller implements HasMiddleware
             'jenis_kelamin' => ['required', Rule::in(['L', 'P'])],
             'tempat_lahir' => ['nullable', 'string', 'max:80'],
             'tanggal_lahir' => ['nullable', 'date', 'before:today'],
+            'kewarganegaraan' => ['nullable', Rule::in(['WNI', 'WNA'])],
+            'negara' => ['nullable', 'string', 'max:100'],
+            'provinsi' => ['nullable', 'string', 'max:100'],
+            'kabupaten_kota' => ['nullable', 'string', 'max:100'],
             'alamat' => ['nullable', 'string', 'max:500'],
             'no_hp' => ['nullable', 'string', 'max:25'],
             'nama_wali' => ['nullable', 'string', 'max:100'],
@@ -249,7 +254,7 @@ class PesertaController extends Controller implements HasMiddleware
             'nama_wali' => 'nama wali',
             'no_hp_wali' => 'nomor HP wali',
             'foto' => 'foto',
-            'ktp' => 'berkas KTP',
+            'ktp' => 'berkas KTP/KK',
             'alasan_cekal' => 'alasan pencekalan',
         ]);
 

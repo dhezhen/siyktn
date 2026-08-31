@@ -59,7 +59,7 @@
                             <x-input name="nama" label="Nama Lengkap" required :value="old('nama', $peserta->nama)" />
 
                             <x-input name="nik" label="NIK" :value="old('nik', $peserta->nik)"
-                                     inputmode="numeric" maxlength="16" placeholder="16 digit sesuai KTP"
+                                     inputmode="numeric" maxlength="16" placeholder="16 digit sesuai KTP/KK"
                                      hint="Dipakai sistem untuk mengenali peserta yang mendaftar lagi." />
 
                             <x-input name="email" type="email" label="Email" :value="old('email', $peserta->email)"
@@ -114,7 +114,7 @@
                         </div>
                     </x-card>
 
-                    <x-card title="Berkas KTP">
+                    <x-card title="Berkas KTP/KK">
                         @if ($peserta->ktp_path)
                             <p class="mb-3 flex items-center gap-2 text-sm text-slate-600">
                                 <x-icon name="check-circle" class="size-4 text-emerald-600" />
@@ -122,11 +122,11 @@
                             </p>
                             <x-button :href="route('pendaftaran.ktp', $peserta)" variant="secondary" size="sm"
                                       target="_blank" class="mb-3 w-full">
-                                Lihat KTP Terlampir
+                                Lihat KTP/KK Terlampir
                             </x-button>
                         @endif
 
-                        <x-input name="ktp" type="file" :label="$peserta->ktp_path ? 'Ganti Berkas' : 'Unggah KTP'"
+                        <x-input name="ktp" type="file" :label="$peserta->ktp_path ? 'Ganti Berkas' : 'Unggah KTP/KK'"
                                  accept=".jpg,.jpeg,.png,.pdf"
                                  hint="JPG, PNG, atau PDF. Maksimal 2 MB. Disimpan tertutup, tidak dapat diakses publik." />
                     </x-card>

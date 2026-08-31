@@ -60,6 +60,11 @@ return [
             'group' => 'Data Tahfidz',
             'actions' => ['view', 'create', 'update', 'delete'],
         ],
+        'program' => [
+            'label' => 'Paket Program',
+            'group' => 'Data Tahfidz',
+            'actions' => ['view', 'create', 'update', 'delete'],
+        ],
         'peserta' => [
             'label' => 'Peserta',
             'group' => 'Data Tahfidz',
@@ -105,9 +110,9 @@ return [
              | kartu lalu dientri petugas. Tanpa izin ini, halaqah yang
              | pengampunya tidak berakun tidak akan pernah punya data.
              */
-            'description' => 'Menginput dan memperbarui data harian, termasuk setoran dari kartu.',
+            'description' => 'Menginput dan memperbarui data harian, termasuk verifikasi kehadiran dan setoran dari kartu.',
             'permissions' => [
-                'angkatan.view', 'peserta.view', 'peserta.create', 'peserta.update', 'peserta.export',
+                'angkatan.view', 'peserta.view', 'peserta.create', 'peserta.update', 'peserta.approve', 'peserta.export',
                 'muhaffizh.view', 'halaqah.view', 'halaqah.view-all',
                 'setoran.view', 'setoran.view-all', 'setoran.create', 'setoran.update', 'setoran.export',
             ],

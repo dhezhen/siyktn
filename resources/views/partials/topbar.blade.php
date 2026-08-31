@@ -1,6 +1,13 @@
 <header class="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 bg-white px-4 sm:px-6">
+    <!-- Tombol Sidebar Mobile -->
     <button type="button" @click="sidebarOpen = true" aria-label="Buka menu"
             class="-ml-1 rounded-lg p-2 text-slate-500 transition duration-150 hover:bg-slate-100 active:scale-90 lg:hidden">
+        <x-icon name="bars" class="size-6" />
+    </button>
+
+    <!-- Tombol Sidebar Desktop -->
+    <button type="button" @click="desktopSidebarOpen = !desktopSidebarOpen" aria-label="Buka/Tutup menu"
+            class="-ml-1 hidden rounded-lg p-2 text-slate-500 transition duration-150 hover:bg-slate-100 active:scale-90 lg:block">
         <x-icon name="bars" class="size-6" />
     </button>
 

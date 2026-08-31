@@ -54,12 +54,28 @@ class Menu
             return false;
         }
 
-        // user.index ikut aktif saat berada di user.create, user.edit, dst.
-        $pattern = Str::contains($route, '.')
-            ? Str::beforeLast($route, '.').'.*'
-            : $route;
+        if (request()->routeIs($route)) {
+            return true;
+        }
 
-        return request()->routeIs($pattern);
+        // user.index ikut aktif saat berada di user.create, user.edit, dst.
+        // Kita batasi wildcard hanya untuk suffix resource standar Laravel 
+        // agar tidak bentrok dengan menu lain yang berbagi prefix yang sama
+        // (seperti pendaftaran.index dan pendaftaran.presensi).
+        if (Str::endsWith($route, '.index')) {
+            $base = Str::beforeLast($route, '.');
+            
+            $patterns = [
+                $base . '.create',
+                $base . '.edit',
+                $base . '.show',
+                $base . '.import.form', // khusus form impor
+            ];
+
+            return request()->routeIs($patterns);
+        }
+
+        return false;
     }
 
     /**

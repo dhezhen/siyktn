@@ -40,18 +40,118 @@ class PendaftaranTable extends Component
     #[Url]
     public string $sampai = '';
 
+    #[Url]
+    public string $sortField = 'didaftarkan_pada';
+
+    #[Url]
+    public string $sortDirection = 'desc';
+
     public int $perPage = 15;
+
+    public function sortBy(string $field): void
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = $field === 'didaftarkan_pada' ? 'desc' : 'asc';
+        }
+        $this->resetPage();
+    }
+
+    public ?int $selectedPendaftaranId = null;
+    public ?Pendaftaran $selectedPendaftaran = null;
+    public string $editStatusPendaftaran = 'pending';
+    public string $editStatusProgram = 'pending';
+    public string $catatanPembayaran = '';
+
+    public function bukaModalPembayaran(int $id): void
+    {
+        $this->selectedPendaftaranId = $id;
+        $this->selectedPendaftaran = Pendaftaran::with(['peserta', 'angkatan', 'program'])->find($id);
+
+        if ($this->selectedPendaftaran) {
+            $this->editStatusPendaftaran = $this->selectedPendaftaran->status_pembayaran_pendaftaran ?: 'pending';
+            $this->editStatusProgram = $this->selectedPendaftaran->status_pembayaran_program ?: 'pending';
+            $this->catatanPembayaran = $this->selectedPendaftaran->catatan_pembayaran ?: '';
+        }
+    }
+
+    public function tutupModalPembayaran(): void
+    {
+        $this->selectedPendaftaranId = null;
+        $this->selectedPendaftaran = null;
+    }
+
+    public function simpanVerifikasiPembayaran(): void
+    {
+        if (! $this->selectedPendaftaranId) {
+            return;
+        }
+
+        $pendaftaran = Pendaftaran::find($this->selectedPendaftaranId);
+        if ($pendaftaran) {
+            $pendaftaran->update([
+                'status_pembayaran_pendaftaran' => $this->editStatusPendaftaran,
+                'status_pembayaran_program' => $this->editStatusProgram,
+                'catatan_pembayaran' => $this->catatanPembayaran,
+            ]);
+
+            $this->dispatch('play-sound', sound: 'success');
+        }
+
+        $this->tutupModalPembayaran();
+    }
+
+    public function quickLunasSemua(int $id): void
+    {
+        $pendaftaran = Pendaftaran::find($id);
+        if ($pendaftaran) {
+            $pendaftaran->update([
+                'status_pembayaran_pendaftaran' => 'lunas',
+                'status_pembayaran_program' => 'lunas',
+            ]);
+
+            $this->dispatch('play-sound', sound: 'success');
+        }
+    }
+
+    public function toggleBayarPendaftaran(Pendaftaran $pendaftaran): void
+    {
+        $newStatus = $pendaftaran->status_pembayaran_pendaftaran === 'lunas' ? 'pending' : 'lunas';
+        $pendaftaran->update(['status_pembayaran_pendaftaran' => $newStatus]);
+        $statusLabel = $newStatus === 'lunas' ? 'Sudah Bayar' : 'Belum Bayar';
+        $this->dispatch('play-sound', sound: 'success');
+        $this->dispatch('swal', icon: 'success', title: 'Status Registrasi Diperbarui', text: "Biaya registrasi {$pendaftaran->peserta?->nama} diubah ke {$statusLabel}.");
+    }
+
+    public function toggleBayarProgram(Pendaftaran $pendaftaran): void
+    {
+        $newStatus = $pendaftaran->status_pembayaran_program === 'lunas' ? 'pending' : 'lunas';
+        $pendaftaran->update(['status_pembayaran_program' => $newStatus]);
+        $statusLabel = $newStatus === 'lunas' ? 'Sudah Bayar' : 'Belum Bayar';
+        $this->dispatch('play-sound', sound: 'success');
+        $this->dispatch('swal', icon: 'success', title: 'Status Program Diperbarui', text: "Biaya program {$pendaftaran->peserta?->nama} diubah ke {$statusLabel}.");
+    }
+
+    public function ubahStatusBayarProgram(Pendaftaran $pendaftaran, string $status): void
+    {
+        if (in_array($status, ['pending', 'dp_sebagian', 'lunas'], true)) {
+            $pendaftaran->update(['status_pembayaran_program' => $status]);
+            $this->dispatch('play-sound', sound: 'success');
+        }
+    }
 
     public function updated($property): void
     {
-        if (in_array($property, ['search', 'status', 'angkatan', 'sumber', 'riwayat', 'dari', 'sampai'], true)) {
+        if (in_array($property, ['search', 'status', 'angkatan', 'sumber', 'riwayat', 'dari', 'sampai', 'sortField', 'sortDirection'], true)) {
             $this->resetPage();
         }
     }
 
     public function resetFilters(): void
     {
-        $this->reset(['search', 'angkatan', 'sumber', 'riwayat', 'dari', 'sampai']);
+        $this->reset(['search', 'angkatan', 'sumber', 'riwayat', 'dari', 'sampai', 'sortField', 'sortDirection']);
         $this->status = 'menunggu';
         $this->resetPage();
     }
@@ -97,20 +197,31 @@ class PendaftaranTable extends Component
                 $q->where(fn ($sub) => $sub
                     ->where('kode_pendaftaran', 'like', $term)
                     ->orWhere('nomor_induk', 'like', $term)
+                    ->orWhereHas('angkatan', fn ($a) => $a->where('nama', 'like', $term))
                     ->orWhereHas('peserta', fn ($p) => $p
                         ->where('nama', 'like', $term)
                         ->orWhere('nik', 'like', $term)
+                        ->orWhere('kabupaten_kota', 'like', $term)
+                        ->orWhere('provinsi', 'like', $term)
+                        ->orWhere('negara', 'like', $term)
                         ->orWhere('email', 'like', $term)
-                        ->orWhere('no_hp', 'like', $term)));
+                        ->orWhere('no_hp', 'like', $term)
+                        ->orWhere('nama_wali', 'like', $term)
+                        ->orWhere('no_hp_wali', 'like', $term)
+                        ->orWhere('tempat_lahir', 'like', $term)));
             })
             ->when($this->angkatan !== '', fn ($q) => $q->where('angkatan_id', $this->angkatan))
             ->when($this->sumber !== '', fn ($q) => $q->where('sumber_pendaftaran', $this->sumber))
             ->when($this->riwayat === 'ulang', fn ($q) => $q->whereHas('peserta.pendaftaran', null, '>', 1))
             ->when($this->riwayat === 'baru', fn ($q) => $q->whereHas('peserta.pendaftaran', null, '=', 1))
             ->when($this->dari !== '', fn ($q) => $q->whereDate('didaftarkan_pada', '>=', $this->dari))
-            ->when($this->sampai !== '', fn ($q) => $q->whereDate('didaftarkan_pada', '<=', $this->sampai))
-            ->orderByDesc('didaftarkan_pada')
-            ->orderByDesc('id')
+            ->when(in_array($this->sortField, ['nama', 'jenis_kelamin', 'kabupaten_kota'], true), function ($q) {
+                $q->join('peserta', 'pendaftaran.peserta_id', '=', 'peserta.id')
+                  ->select('pendaftaran.*')
+                  ->orderBy('peserta.'.$this->sortField, $this->sortDirection === 'asc' ? 'asc' : 'desc');
+            }, function ($q) {
+                $q->orderBy($this->sortField === 'kode_pendaftaran' ? 'kode_pendaftaran' : 'didaftarkan_pada', $this->sortDirection === 'asc' ? 'asc' : 'desc');
+            })
             ->paginate($this->perPage);
 
         return view('livewire.pendaftaran-table', [

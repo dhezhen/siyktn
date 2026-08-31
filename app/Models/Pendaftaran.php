@@ -23,25 +23,115 @@ class Pendaftaran extends Model
 
     protected $table = 'pendaftaran';
 
+    public const PAKET_PROGRAM = [
+        '1_bulan' => [
+            'nama' => 'Karantina Tahfizh Program Hafal Quran Sebulan (30 Hari)',
+            'biaya' => 3750000,
+            'durasi' => '30 Hari',
+        ],
+        '3_pekan' => [
+            'nama' => 'Karantina Tahfizh Al-Quran Program 3 Pekan',
+            'biaya' => 3250000,
+            'durasi' => '21 Hari',
+        ],
+        '2_pekan' => [
+            'nama' => 'Karantina Tahfizh Al-Quran Program 2 Pekan',
+            'biaya' => 2500000,
+            'durasi' => '14 Hari',
+        ],
+        '1_pekan' => [
+            'nama' => 'Karantina Tahfizh Al-Quran Program 1 Pekan',
+            'biaya' => 2000000,
+            'durasi' => '7 Hari',
+        ],
+        '3_bulan' => [
+            'nama' => 'Karantina Tahfizh Al-Quran Program Mutqin (3 Bulan)',
+            'biaya' => 10850000,
+            'durasi' => '90 Hari',
+        ],
+    ];
+
     protected array $activityFields = [
-        'nomor_induk', 'angkatan_id', 'status', 'status_pendaftaran',
+        'nomor_induk', 'angkatan_id', 'status', 'status_pendaftaran', 'status_kehadiran',
+        'status_pembayaran_pendaftaran', 'status_pembayaran_program',
     ];
 
     protected string $activityLabel = 'Pendaftaran';
 
     protected $fillable = [
-        'peserta_id', 'angkatan_id', 'kode_pendaftaran', 'nomor_induk',
-        'status_pendaftaran', 'sumber_pendaftaran', 'status', 'tanggal_masuk',
+        'peserta_id', 'angkatan_id', 'program_id', 'kode_pendaftaran', 'nomor_induk',
+        'status_pendaftaran', 'sumber_pendaftaran', 'status', 'status_kehadiran',
+        'waktu_kehadiran', 'diverifikasi_oleh', 'tanggal_masuk', 'tanggal_selesai',
         'didaftarkan_pada', 'ditinjau_pada', 'ditinjau_oleh', 'alasan_penolakan',
+        'paket_program', 'biaya_program', 'biaya_pendaftaran',
+        'status_pembayaran_pendaftaran', 'status_pembayaran_program',
+        'bukti_pembayaran_path', 'catatan_pembayaran',
     ];
 
     protected function casts(): array
     {
         return [
             'tanggal_masuk' => 'date',
+            'tanggal_selesai' => 'date',
             'didaftarkan_pada' => 'datetime',
             'ditinjau_pada' => 'datetime',
+            'waktu_kehadiran' => 'datetime',
+            'biaya_program' => 'decimal:2',
+            'biaya_pendaftaran' => 'decimal:2',
         ];
+    }
+
+    protected static function booted()
+    {
+        static::saving(function (Pendaftaran $pendaftaran) {
+            if ($pendaftaran->isDirty('tanggal_masuk') && $pendaftaran->tanggal_masuk) {
+                $pendaftaran->tanggal_selesai = $pendaftaran->tanggal_masuk->clone()->addDays($pendaftaran->getDurasiHari());
+            }
+        });
+    }
+
+    public function getDurasiHari(): int
+    {
+        if ($this->program) {
+            return $this->program->durasi_hari;
+        }
+
+        $durasiString = self::PAKET_PROGRAM[$this->paket_program]['durasi'] ?? '30 Hari';
+        return (int) filter_var($durasiString, FILTER_SANITIZE_NUMBER_INT) ?: 30;
+    }
+
+    public function getPaketProgramLabelAttribute(): string
+    {
+        if ($this->program) {
+            return $this->program->nama;
+        }
+
+        return self::PAKET_PROGRAM[$this->paket_program]['nama'] ?? ($this->paket_program ?: 'Karantina Tahfizh Standard');
+    }
+
+    public function getFormattedBiayaProgramAttribute(): string
+    {
+        return 'Rp '.number_format((float) $this->biaya_program, 0, ',', '.');
+    }
+
+    public function getFormattedBiayaPendaftaranAttribute(): string
+    {
+        return 'Rp '.number_format((float) $this->biaya_pendaftaran, 0, ',', '.');
+    }
+
+    public function isPembayaranPendaftaranLunas(): bool
+    {
+        return in_array($this->status_pembayaran_pendaftaran, ['lunas', 'bebas_biaya'], true);
+    }
+
+    public function isPembayaranProgramLunas(): bool
+    {
+        return $this->status_pembayaran_program === 'lunas';
+    }
+
+    public function program(): BelongsTo
+    {
+        return $this->belongsTo(Program::class);
     }
 
     public function peserta(): BelongsTo
@@ -57,6 +147,20 @@ class Pendaftaran extends Model
     public function peninjau(): BelongsTo
     {
         return $this->belongsTo(User::class, 'ditinjau_oleh');
+    }
+
+    public function verifikatorKehadiran(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'diverifikasi_oleh');
+    }
+
+    public function konfirmasiKehadiran(?int $userId = null): bool
+    {
+        return $this->update([
+            'status_kehadiran' => 'hadir',
+            'waktu_kehadiran' => now(),
+            'diverifikasi_oleh' => $userId ?: auth()->id(),
+        ]);
     }
 
     public function anggotaHalaqah(): HasMany

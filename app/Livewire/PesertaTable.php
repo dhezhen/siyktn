@@ -34,37 +34,92 @@ class PesertaTable extends Component
     #[Url]
     public string $riwayat = '';
 
+    #[Url]
+    public string $sortField = 'nama';
+
+    #[Url]
+    public string $sortDirection = 'asc';
+
     public int $perPage = 20;
+
+    public function sortBy(string $field): void
+    {
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+        $this->resetPage();
+    }
 
     public function updated($property): void
     {
-        if (in_array($property, ['search', 'angkatan', 'status', 'jenisKelamin', 'statusPendaftaran', 'riwayat'], true)) {
+        if (in_array($property, ['search', 'angkatan', 'status', 'jenisKelamin', 'statusPendaftaran', 'riwayat', 'sortField', 'sortDirection'], true)) {
             $this->resetPage();
         }
     }
 
     public function resetFilters(): void
     {
-        $this->reset(['search', 'angkatan', 'status', 'jenisKelamin', 'statusPendaftaran', 'riwayat']);
+        $this->reset(['search', 'angkatan', 'status', 'jenisKelamin', 'statusPendaftaran', 'riwayat', 'sortField', 'sortDirection']);
         $this->resetPage();
+    }
+
+    public function updateStatusPendaftaran(int $pendaftaranId, string $status): void
+    {
+        if (! auth()->user()->can('peserta.update')) {
+            abort(403);
+        }
+
+        if (! in_array($status, ['aktif', 'lulus', 'keluar'], true)) {
+            return;
+        }
+
+        $pendaftaran = \App\Models\Pendaftaran::find($pendaftaranId);
+        if ($pendaftaran) {
+            $pendaftaran->update(['status' => $status]);
+        }
     }
 
     public function render(): View
     {
+        $sortableFields = ['nama', 'jenis_kelamin', 'kabupaten_kota', 'provinsi', 'created_at'];
+        $field = in_array($this->sortField, $sortableFields, true) ? $this->sortField : 'nama';
+        $direction = $this->sortDirection === 'desc' ? 'desc' : 'asc';
+
         $peserta = Peserta::query()
+            ->whereHas('pendaftaran', fn ($q) => $q->where('status_pendaftaran', 'disetujui'))
             ->withCount('pendaftaran')
-            ->with(['pendaftaranTerakhir.angkatan:id,nama,kode'])
+            ->with(['pendaftaran' => function ($q) {
+                if ($this->angkatan !== '') {
+                    $q->where('angkatan_id', $this->angkatan);
+                }
+                if ($this->status !== '') {
+                    $q->where('status', $this->status);
+                }
+                if ($this->statusPendaftaran !== '') {
+                    $q->where('status_pendaftaran', $this->statusPendaftaran);
+                }
+                $q->latest('didaftarkan_pada');
+            }, 'pendaftaran.angkatan:id,nama,kode'])
             ->when($this->search !== '', function ($q) {
                 $term = '%'.$this->search.'%';
                 $q->where(fn ($sub) => $sub
                     ->where('nama', 'like', $term)
                     ->orWhere('nik', 'like', $term)
+                    ->orWhere('kabupaten_kota', 'like', $term)
+                    ->orWhere('provinsi', 'like', $term)
+                    ->orWhere('negara', 'like', $term)
                     ->orWhere('no_hp', 'like', $term)
                     ->orWhere('email', 'like', $term)
                     ->orWhere('nama_wali', 'like', $term)
+                    ->orWhere('no_hp_wali', 'like', $term)
+                    ->orWhere('tempat_lahir', 'like', $term)
                     ->orWhereHas('pendaftaran', fn ($p) => $p
                         ->where('nomor_induk', 'like', $term)
-                        ->orWhere('kode_pendaftaran', 'like', $term)));
+                        ->orWhere('kode_pendaftaran', 'like', $term)
+                        ->orWhereHas('angkatan', fn ($a) => $a->where('nama', 'like', $term))));
             })
             ->when($this->angkatan !== '', fn ($q) => $q
                 ->whereHas('pendaftaran', fn ($p) => $p->where('angkatan_id', $this->angkatan)))
@@ -76,7 +131,7 @@ class PesertaTable extends Component
             ->when($this->riwayat === 'ulang', fn ($q) => $q->has('pendaftaran', '>', 1))
             ->when($this->riwayat === 'alumni', fn ($q) => $q->alumni())
             ->when($this->riwayat === 'cekal', fn ($q) => $q->where('boleh_mendaftar_lagi', false))
-            ->orderBy('nama')
+            ->orderBy($field, $direction)
             ->paginate($this->perPage);
 
         return view('livewire.peserta-table', [

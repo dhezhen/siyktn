@@ -61,6 +61,30 @@ class HalaqahTest extends TestCase
         $this->assertDatabaseCount('anggota_halaqah', 0);
     }
 
+    public function test_halaqah_ikhwan_tidak_bisa_diampu_muhaffizhah_perempuan(): void
+    {
+        $angkatan = $this->angkatan();
+        $muhaffizhah = Muhaffizh::create([
+            'kode' => 'MHF-099',
+            'nama' => 'Ustadzah Fatimah',
+            'jenis_kelamin' => 'P',
+            'status' => 'aktif',
+        ]);
+
+        $response = $this->actingAs($this->petugas())
+            ->post(route('halaqah.store'), [
+                'angkatan_id' => $angkatan->id,
+                'kode' => 'H-IKHWAH-1',
+                'nama' => 'Halaqah Ikhwan 1',
+                'jenis_kelamin' => 'L',
+                'muhaffizh_id' => $muhaffizhah->id,
+                'kuota' => 10,
+                'is_aktif' => 1,
+            ]);
+
+        $response->assertSessionHasErrors(['muhaffizh_id']);
+    }
+
     public function test_santri_angkatan_lain_tidak_bisa_masuk(): void
     {
         $angkatan = $this->angkatan();

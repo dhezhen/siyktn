@@ -24,7 +24,7 @@ class PendaftaranAdminController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:peserta.approve', only: ['index', 'setujui', 'tolak']),
+            new Middleware('permission:peserta.approve', only: ['index', 'setujui', 'tolak', 'presensi', 'konfirmasiKehadiran']),
             new Middleware('permission:peserta.view', only: ['ktp']),
         ];
     }
@@ -32,6 +32,64 @@ class PendaftaranAdminController extends Controller implements HasMiddleware
     public function index(): View
     {
         return view('pendaftaran.index');
+    }
+
+    public function presensi(Request $request): View
+    {
+        return view('pendaftaran.presensi');
+    }
+
+    public function konfirmasiKehadiran(Request $request, ?Pendaftaran $pendaftaran = null): \Illuminate\Http\JsonResponse|RedirectResponse
+    {
+        $kode = $request->input('kode_pendaftaran') ?: $request->input('kode');
+
+        if (! $pendaftaran && $kode) {
+            $pendaftaran = Pendaftaran::where('kode_pendaftaran', $kode)
+                ->orWhere('nomor_induk', $kode)
+                ->first();
+        }
+
+        if (! $pendaftaran) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pendaftaran dengan kode "'.$kode.'" tidak ditemukan.',
+                ], 404);
+            }
+
+            return back()->with('error', 'Data pendaftaran tidak ditemukan.');
+        }
+
+        $peserta = $pendaftaran->peserta;
+        $sudahHadir = $pendaftaran->status_kehadiran === 'hadir';
+
+        if (! $sudahHadir) {
+            $pendaftaran->konfirmasiKehadiran(Auth::id());
+        }
+
+        $pesan = $sudahHadir
+            ? "Peserta {$peserta->nama} ({$pendaftaran->kode_pendaftaran}) sudah terkonfirmasi HADIR sebelumnya."
+            : "✓ Presensi Berhasil! {$peserta->nama} ({$pendaftaran->kode_pendaftaran}) berhasil dikonfirmasi HADIR di lokasi.";
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'already_present' => $sudahHadir,
+                'message' => $pesan,
+                'data' => [
+                    'id' => $pendaftaran->id,
+                    'kode_pendaftaran' => $pendaftaran->kode_pendaftaran,
+                    'nomor_induk' => $pendaftaran->nomor_induk,
+                    'nama' => $peserta->nama,
+                    'jenis_kelamin' => $peserta->jenis_kelamin_label,
+                    'angkatan' => $pendaftaran->angkatan?->nama,
+                    'foto_url' => $peserta->foto_url,
+                    'waktu_kehadiran' => $pendaftaran->fresh()->waktu_kehadiran?->translatedFormat('d M Y, H:i:s'),
+                ],
+            ]);
+        }
+
+        return back()->with($sudahHadir ? 'info' : 'success', $pesan);
     }
 
     public function setujui(Pendaftaran $pendaftaran): RedirectResponse

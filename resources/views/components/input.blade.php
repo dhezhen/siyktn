@@ -2,14 +2,14 @@
 
 <div>
     @if ($label)
-        <label for="{{ $name }}" class="mb-1 block text-sm font-medium text-slate-700">
+        <label for="{{ $name }}" class="mb-1.5 block text-sm font-semibold text-slate-800">
             {{ $label }} @if ($required)<span class="text-rose-500">*</span>@endif
         </label>
     @endif
 
     <input type="{{ $type }}" name="{{ $name }}" id="{{ $name }}"
         {{ $attributes->merge([
-            'class' => 'block w-full rounded-lg border-0 px-3 py-2 text-sm text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-emerald-600'
+            'class' => 'block w-full rounded-xl border-0 px-4 py-3 text-sm text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 transition duration-200 ease-in-out hover:ring-slate-400 focus:ring-2 focus:ring-inset focus:ring-emerald-500'
                 . ($errors->has($name) ? ' ring-rose-400 focus:ring-rose-500' : ''),
         ]) }}>
 
