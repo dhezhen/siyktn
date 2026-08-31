@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\RecordsActivity;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -46,6 +47,15 @@ class User extends Authenticatable
             'is_active' => 'boolean',
             'must_change_password' => 'boolean',
         ];
+    }
+
+    /**
+     * Data kemuhaffizhan pemilik akun ini, bila akunnya memang milik seorang
+     * muhaffizh. Dijaga unik oleh indeks `muhaffizh.user_id`.
+     */
+    public function muhaffizh(): HasOne
+    {
+        return $this->hasOne(Muhaffizh::class);
     }
 
     /**

@@ -52,7 +52,19 @@ return new class extends Migration
 
         Schema::table('peserta', function (Blueprint $table) {
             $table->dropIndex(['status_pendaftaran', 'didaftarkan_pada']);
-            $table->dropConstrainedForeignId('angkatan_id');
+
+            if (DB::getDriverName() === 'sqlite') {
+                $table->dropIndex(['angkatan_id', 'status']);
+                $table->dropUnique(['kode_pendaftaran']);
+                $table->dropUnique(['nomor_induk']);
+                $table->dropConstrainedForeignId('angkatan_id');
+            } else {
+                $table->dropConstrainedForeignId('angkatan_id');
+                $table->dropIndex(['angkatan_id', 'status']);
+                $table->dropUnique(['kode_pendaftaran']);
+                $table->dropUnique(['nomor_induk']);
+            }
+
             $table->dropConstrainedForeignId('ditinjau_oleh');
             $table->dropColumn([
                 'kode_pendaftaran', 'nomor_induk', 'status', 'status_pendaftaran',

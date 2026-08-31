@@ -16,42 +16,52 @@ class MenuSeeder extends Seeder
         $menus = [
             ['title' => 'Dashboard', 'icon' => 'squares', 'type' => 'route', 'route' => 'dashboard'],
 
-            ['title' => 'Manajemen Pengguna', 'type' => 'header', 'children' => [
+            ['title' => 'Manajemen Pengguna', 'icon' => 'users', 'type' => 'header', 'children' => [
                 ['title' => 'Pengguna', 'icon' => 'users', 'type' => 'route', 'route' => 'user.index', 'permission' => 'user.view'],
                 ['title' => 'Role & Hak Akses', 'icon' => 'shield', 'type' => 'route', 'route' => 'role.index', 'permission' => 'role.view'],
             ]],
 
-            ['title' => 'Data Tahfidz', 'type' => 'header', 'children' => [
+            ['title' => 'Data Tahfidz', 'icon' => 'identification', 'type' => 'header', 'children' => [
                 ['title' => 'Pendaftaran', 'icon' => 'info', 'type' => 'route', 'route' => 'pendaftaran.index', 'permission' => 'peserta.approve'],
                 ['title' => 'Angkatan', 'icon' => 'list', 'type' => 'route', 'route' => 'angkatan.index', 'permission' => 'angkatan.view'],
                 ['title' => 'Peserta', 'icon' => 'users', 'type' => 'route', 'route' => 'peserta.index', 'permission' => 'peserta.view'],
+                ['title' => 'Muhaffizh', 'icon' => 'academic', 'type' => 'route', 'route' => 'muhaffizh.index', 'permission' => 'muhaffizh.view'],
             ]],
 
-            ['title' => 'Pengaturan', 'type' => 'header', 'children' => [
+            ['title' => 'Modul Halaqah', 'icon' => 'academic', 'type' => 'header', 'children' => [
+                ['title' => 'Halaqah', 'icon' => 'book', 'type' => 'route', 'route' => 'halaqah.index', 'permission' => 'halaqah.view'],
+                ['title' => 'Setoran Hafalan', 'icon' => 'check-circle', 'type' => 'route', 'route' => 'setoran.index', 'permission' => 'setoran.view'],
+            ]],
+
+            ['title' => 'Pengaturan', 'icon' => 'cog', 'type' => 'header', 'children' => [
                 ['title' => 'Menu', 'icon' => 'list', 'type' => 'route', 'route' => 'menu.index', 'permission' => 'menu.view'],
                 ['title' => 'Aplikasi', 'icon' => 'cog', 'type' => 'route', 'route' => 'setting.edit', 'permission' => 'setting.view'],
                 ['title' => 'Log Aktivitas', 'icon' => 'info', 'type' => 'route', 'route' => 'activity.index', 'permission' => 'activity.view'],
             ]],
         ];
 
-        // Header dipakai sebagai judul kelompok: anaknya ikut jadi menu level atas,
-        // persis seperti yang dirender sidebar.
-        $order = 0;
-
-        foreach ($menus as $item) {
-            $children = $item['children'] ?? [];
-            unset($item['children']);
-
-            $this->store($item, $order++);
-
-            foreach ($children as $child) {
-                $this->store($child, $order++);
-            }
-        }
+        $this->simpanBanyak($menus, null);
 
         Menu::flushCache();
 
         $this->command?->info(Menu::count().' menu tersedia.');
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     */
+    protected function simpanBanyak(array $items, ?int $parentId): void
+    {
+        foreach ($items as $item) {
+            $children = $item['children'] ?? [];
+            unset($item['children']);
+
+            $menu = $this->store($item, $parentId);
+
+            if ($children !== []) {
+                $this->simpanBanyak($children, $menu->id);
+            }
+        }
     }
 
     /**
@@ -61,8 +71,10 @@ class MenuSeeder extends Seeder
      * (untuk header/divider) — bukan dari parent_id atau order, karena keduanya
      * memang dirancang untuk diubah petugas lewat halaman Manajemen Menu.
      * Seeder yang menimpa susunan itu akan menghapus pekerjaan orang lain.
+     *
+     * @param  array<string, mixed>  $attributes
      */
-    protected function store(array $attributes, int $order): void
+    protected function store(array $attributes, ?int $parentId): Menu
     {
         $type = $attributes['type'] ?? 'route';
 
@@ -70,10 +82,23 @@ class MenuSeeder extends Seeder
             ? ['title' => $attributes['title'], 'type' => $type]
             : ['route' => $attributes['route']];
 
-        if (Menu::where($kunci)->exists()) {
-            return;
+        if ($menu = Menu::where($kunci)->first()) {
+            return $menu;
         }
 
-        Menu::create(array_merge($attributes, ['order' => $order, 'is_active' => true]));
+        /*
+         | Urutan dihitung dari isi kelompoknya sendiri, bukan dari penghitung
+         | global. Dulu nomornya diambil dari urutan berjalan seeder, sehingga
+         | pada database yang sudah terisi menu baru bisa mendarat di tengah
+         | kelompok lain — "Muhaffizh" sempat nyangkut di bawah "Pengaturan"
+         | karena itu. Menu baru sekarang selalu ditaruh di akhir kelompoknya.
+         */
+        $order = (Menu::where('parent_id', $parentId)->max('order') ?? -1) + 1;
+
+        return Menu::create(array_merge($attributes, [
+            'parent_id' => $parentId,
+            'order' => $order,
+            'is_active' => true,
+        ]));
     }
 }

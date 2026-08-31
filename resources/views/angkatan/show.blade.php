@@ -100,8 +100,20 @@
                     </dd>
                 </div>
                 <div>
-                    <dt class="text-slate-500">Kuota</dt>
-                    <dd class="mt-0.5 text-slate-800">{{ $angkatan->kuota > 0 ? $angkatan->kuota.' peserta' : 'Tidak dibatasi' }}</dd>
+                    <dt class="text-slate-500">Kuota Total</dt>
+                    <dd class="mt-0.5 text-slate-800">{{ $angkatan->kuota > 0 ? $angkatan->kuota.' peserta (sisa: '.($angkatan->sisa_kuota ?? 0).')' : 'Tidak dibatasi' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-slate-500">Kuota Putra (Laki-laki)</dt>
+                    <dd class="mt-0.5 text-slate-800">
+                        {{ $angkatan->kuota_putra > 0 ? $angkatan->kuota_putra.' kursi (terisi: '.$angkatan->peserta_putra_aktif_count.', sisa: '.($angkatan->sisa_kuota_putra ?? 'unlimited').')' : 'Tidak dibatasi' }}
+                    </dd>
+                </div>
+                <div>
+                    <dt class="text-slate-500">Kuota Putri (Perempuan)</dt>
+                    <dd class="mt-0.5 text-slate-800">
+                        {{ $angkatan->kuota_putri > 0 ? $angkatan->kuota_putri.' kursi (terisi: '.$angkatan->peserta_putri_aktif_count.', sisa: '.($angkatan->sisa_kuota_putri ?? 'unlimited').')' : 'Tidak dibatasi' }}
+                    </dd>
                 </div>
                 @if ($angkatan->keterangan)
                     <div>

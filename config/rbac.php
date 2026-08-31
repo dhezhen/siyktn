@@ -19,6 +19,7 @@ return [
 
     'action_labels' => [
         'view' => 'Lihat',
+        'view-all' => 'Lihat Semua',
         'create' => 'Tambah',
         'update' => 'Ubah',
         'delete' => 'Hapus',
@@ -64,6 +65,21 @@ return [
             'group' => 'Data Tahfidz',
             'actions' => ['view', 'create', 'update', 'delete', 'export', 'import', 'approve'],
         ],
+        'muhaffizh' => [
+            'label' => 'Muhaffizh',
+            'group' => 'Data Tahfidz',
+            'actions' => ['view', 'create', 'update', 'delete', 'export'],
+        ],
+        'halaqah' => [
+            'label' => 'Halaqah',
+            'group' => 'Modul Halaqah',
+            'actions' => ['view', 'view-all', 'create', 'update', 'delete'],
+        ],
+        'setoran' => [
+            'label' => 'Setoran Hafalan',
+            'group' => 'Modul Halaqah',
+            'actions' => ['view', 'view-all', 'create', 'update', 'delete', 'export'],
+        ],
     ],
 
     /*
@@ -79,13 +95,28 @@ return [
             'description' => 'Mengelola pengguna dan seluruh data operasional.',
             'permissions' => [
                 'user.*', 'role.view', 'menu.*', 'setting.*', 'activity.view',
-                'angkatan.*', 'peserta.*',
+                'angkatan.*', 'peserta.*', 'muhaffizh.*', 'halaqah.*', 'setoran.*',
             ],
         ],
         'operator' => [
-            'description' => 'Menginput dan memperbarui data harian.',
+            /*
+             | Operator ikut boleh mencatat setoran. Ini bukan kelonggaran:
+             | sebagian muhaffizh tidak memakai aplikasi, setorannya dicatat di
+             | kartu lalu dientri petugas. Tanpa izin ini, halaqah yang
+             | pengampunya tidak berakun tidak akan pernah punya data.
+             */
+            'description' => 'Menginput dan memperbarui data harian, termasuk setoran dari kartu.',
             'permissions' => [
                 'angkatan.view', 'peserta.view', 'peserta.create', 'peserta.update', 'peserta.export',
+                'muhaffizh.view', 'halaqah.view', 'halaqah.view-all',
+                'setoran.view', 'setoran.view-all', 'setoran.create', 'setoran.update', 'setoran.export',
+            ],
+        ],
+        'muhaffizh' => [
+            'description' => 'Pembimbing hafalan. Mengelola halaqah yang diampu beserta setoran santrinya.',
+            'permissions' => [
+                'angkatan.view', 'peserta.view', 'muhaffizh.view', 'halaqah.view',
+                'setoran.view', 'setoran.create', 'setoran.update', 'setoran.delete', 'setoran.export',
             ],
         ],
         'pengguna' => [

@@ -7,12 +7,15 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HalaqahController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\MuhaffizhController;
 use App\Http\Controllers\PendaftaranAdminController;
 use App\Http\Controllers\PendaftaranController;
 use App\Http\Controllers\PesertaController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\SetoranController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -93,6 +96,28 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
 
     Route::get('peserta/ekspor', [PesertaController::class, 'export'])->name('peserta.export');
     Route::resource('peserta', PesertaController::class)->parameters(['peserta' => 'peserta']);
+
+    Route::get('muhaffizh/ekspor', [MuhaffizhController::class, 'export'])->name('muhaffizh.export');
+    Route::post('muhaffizh/{muhaffizh}/akun', [MuhaffizhController::class, 'buatkanAkun'])->name('muhaffizh.akun');
+    Route::resource('muhaffizh', MuhaffizhController::class)->parameters(['muhaffizh' => 'muhaffizh']);
+
+    /*
+     | Halaqah beserta keanggotaan santrinya.
+     | Rute anggota didaftarkan sebelum resource agar "halaqah/anggota/…"
+     | tidak tertangkap sebagai {halaqah}.
+     */
+    Route::post('halaqah/{halaqah}/anggota', [HalaqahController::class, 'tempatkan'])->name('halaqah.anggota.store');
+    Route::put('halaqah/anggota/{anggota}/pindah', [HalaqahController::class, 'pindahkan'])->name('halaqah.anggota.pindah');
+    Route::delete('halaqah/anggota/{anggota}', [HalaqahController::class, 'keluarkan'])->name('halaqah.anggota.keluar');
+    Route::resource('halaqah', HalaqahController::class)->parameters(['halaqah' => 'halaqah']);
+
+    /*
+     | Setoran hafalan. Satuannya halaman.
+     */
+    Route::get('setoran/ekspor', [SetoranController::class, 'export'])->name('setoran.export');
+    Route::resource('setoran', SetoranController::class)
+        ->parameters(['setoran' => 'setoran'])
+        ->except('show');
 
     /*
      | Peninjauan pendaftaran.

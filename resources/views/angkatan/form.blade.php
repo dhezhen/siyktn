@@ -32,8 +32,16 @@
                 <x-input name="tanggal_selesai" type="date" label="Tanggal Selesai"
                          :value="old('tanggal_selesai', $angkatan->tanggal_selesai?->format('Y-m-d'))" />
 
-                <x-input name="kuota" type="number" label="Kuota Peserta" required min="0" max="9999"
+                <x-input name="kuota" type="number" label="Kuota Total Peserta" required min="0" max="9999"
                          :value="old('kuota', $angkatan->kuota ?? 0)"
+                         hint="Isi 0 bila tidak dibatasi secara keseluruhan." />
+
+                <x-input name="kuota_putra" type="number" label="Kuota Putra (Laki-laki)" required min="0" max="9999"
+                         :value="old('kuota_putra', $angkatan->kuota_putra ?? 0)"
+                         hint="Isi 0 bila tidak dibatasi." />
+
+                <x-input name="kuota_putri" type="number" label="Kuota Putri (Perempuan)" required min="0" max="9999"
+                         :value="old('kuota_putri', $angkatan->kuota_putri ?? 0)"
                          hint="Isi 0 bila tidak dibatasi." />
             </div>
 

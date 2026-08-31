@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Menu;
+use App\Support\Rbac;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
@@ -48,7 +49,7 @@ class MenuManager extends Component
             'route' => [Rule::requiredIf($this->type === 'route'), 'nullable', 'string', 'max:150'],
             'url' => [Rule::requiredIf($this->type === 'url'), 'nullable', 'string', 'max:255'],
             'target' => ['required', Rule::in(['_self', '_blank'])],
-            'permission' => ['nullable', 'string', Rule::in(\App\Support\Rbac::allPermissions())],
+            'permission' => ['nullable', 'string', Rule::in(Rbac::allPermissions())],
         ];
     }
 
@@ -194,8 +195,8 @@ class MenuManager extends Component
     {
         return view('livewire.menu-manager', [
             'menus' => Menu::with('children.children')->roots()->orderBy('order')->get(),
-            'parentOptions' => Menu::roots()->orderBy('order')->get(['id', 'title']),
-            'permissions' => \App\Support\Rbac::allPermissions(),
+            'parentOptions' => $this->parentOptions(),
+            'permissions' => Rbac::allPermissions(),
             'availableRoutes' => collect(Route::getRoutes())
                 ->map(fn ($r) => $r->getName())
                 ->filter(fn ($name) => $name && ! str_starts_with($name, 'livewire')
@@ -203,6 +204,41 @@ class MenuManager extends Component
                     && ! str_contains($name, '.update') && ! str_contains($name, '.destroy'))
                 ->unique()->sort()->values(),
         ]);
+    }
+
+    /**
+     * Pilihan menu induk, ditampilkan bertingkat supaya kelompoknya terbaca.
+     *
+     * Dulu hanya menu level atas yang ditawarkan, sehingga memindahkan menu
+     * antar kelompok cuma bisa lewat seretan. Kedalaman dibatasi dua tingkat,
+     * sama dengan batas yang dirender pohon di sebelah kiri.
+     *
+     * @return array<int, string>
+     */
+    protected function parentOptions(): array
+    {
+        $semua = Menu::where('type', '!=', 'divider')->orderBy('order')->orderBy('id')->get();
+        $pilihan = [];
+
+        $telusuri = function (?int $parentId, int $depth) use (&$telusuri, $semua, &$pilihan) {
+            foreach ($semua->where('parent_id', $parentId) as $menu) {
+                // Melewati diri sendiri sekaligus melewati seluruh keturunannya,
+                // karena rekursi tidak diteruskan ke dalam.
+                if ($menu->id === $this->editingId) {
+                    continue;
+                }
+
+                $pilihan[$menu->id] = str_repeat('　', $depth).($depth > 0 ? '└ ' : '').$menu->title;
+
+                if ($depth < 1) {
+                    $telusuri($menu->id, $depth + 1);
+                }
+            }
+        };
+
+        $telusuri(null, 0);
+
+        return $pilihan;
     }
 
     protected function resetForm(): void

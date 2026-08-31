@@ -6,6 +6,8 @@ use App\Models\Concerns\RecordsActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -55,6 +57,28 @@ class Pendaftaran extends Model
     public function peninjau(): BelongsTo
     {
         return $this->belongsTo(User::class, 'ditinjau_oleh');
+    }
+
+    public function anggotaHalaqah(): HasMany
+    {
+        return $this->hasMany(AnggotaHalaqah::class);
+    }
+
+    /**
+     * Keanggotaan halaqah yang sedang berjalan. Dijamin paling banyak satu
+     * oleh indeks unik "kunci_aktif" di tabel anggota_halaqah.
+     */
+    public function keanggotaanAktif(): HasOne
+    {
+        return $this->hasOne(AnggotaHalaqah::class)->where('is_aktif', true);
+    }
+
+    /**
+     * Santri yang sudah aktif tetapi belum ditempatkan di halaqah mana pun.
+     */
+    public function scopeBelumBerhalaqah(Builder $query): Builder
+    {
+        return $query->aktif()->whereDoesntHave('keanggotaanAktif');
     }
 
     public function scopeMenunggu(Builder $query): Builder

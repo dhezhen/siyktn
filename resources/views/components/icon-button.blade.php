@@ -36,7 +36,6 @@
         <button x-ref="anchor"
                 @mouseenter="tip = true" @mouseleave="tip = false"
                 @focus="tip = true" @blur="tip = false"
-                @click="tip = false"
                 aria-label="{{ $label }}"
                 {{ $attributes->merge(['type' => 'button', 'class' => $classes]) }}>
             <x-icon :name="$icon" class="size-[1.15rem]" />

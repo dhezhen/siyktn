@@ -36,8 +36,14 @@
                     @foreach ($angkatan as $item)
                         <option value="{{ $item->id }}" @selected(old('angkatan_id') == $item->id)>
                             {{ $item->nama }} ({{ $item->tahun }})
-                            @if ($item->sisa_kuota !== null)
-                                — sisa {{ $item->sisa_kuota }} kursi
+                            @php
+                                $infoQuota = [];
+                                if ($item->sisa_kuota !== null) $infoQuota[] = "Total sisa {$item->sisa_kuota}";
+                                if ($item->sisa_kuota_putra !== null) $infoQuota[] = "Putra sisa {$item->sisa_kuota_putra}";
+                                if ($item->sisa_kuota_putri !== null) $infoQuota[] = "Putri sisa {$item->sisa_kuota_putri}";
+                            @endphp
+                            @if (!empty($infoQuota))
+                                — ({{ implode(', ', $infoQuota) }})
                             @endif
                         </option>
                     @endforeach

@@ -4,17 +4,25 @@
     $active = \App\Support\Menu::isActive($item);
 @endphp
 
-@if ($type === 'header')
+@if ($type === 'divider')
+    <hr class="my-3 border-white/10">
+
+@elseif ($type === 'header' && $children === [])
+    {{--
+        Header gaya lama: tidak punya anak, hanya "memiliki" menu sesudahnya.
+        Dibiarkan sebagai label supaya susunan yang pernah diatur manual
+        tidak berubah bentuk.
+    --}}
     <p class="px-3 pt-5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
         {{ $item['title'] }}
     </p>
 
-@elseif ($type === 'divider')
-    <hr class="my-3 border-white/10">
-
 @elseif ($children !== [])
+    {{-- Kelompok yang bisa dibuka-tutup; terbuka sendiri bila halaman yang
+         sedang dibuka ada di dalamnya. --}}
     <div x-data="{ open: @js($active) }">
         <button type="button" @click="open = ! open"
+                :aria-expanded="open ? 'true' : 'false'"
                 class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition duration-150 ease-out hover:bg-white/5 hover:text-white {{ $active ? 'text-white' : '' }}">
             <x-icon :name="$item['icon'] ?? 'dot'" class="size-5 shrink-0" />
             <span class="flex-1 truncate text-left">{{ $item['title'] }}</span>

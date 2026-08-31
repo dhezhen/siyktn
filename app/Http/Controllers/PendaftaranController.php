@@ -64,6 +64,14 @@ class PendaftaranController extends Controller
             'ktp' => 'berkas KTP',
         ]);
 
+        $selectedAngkatan = $angkatanTerbuka->firstWhere('id', (int) $data['angkatan_id']);
+        if ($selectedAngkatan && $selectedAngkatan->isKuotaPenuhUntuk($data['jenis_kelamin'])) {
+            $labelGender = $data['jenis_kelamin'] === 'L' ? 'Laki-laki' : 'Perempuan';
+            throw ValidationException::withMessages([
+                'angkatan_id' => "Kuota pendaftaran untuk {$labelGender} pada {$selectedAngkatan->nama} sudah penuh.",
+            ]);
+        }
+
         $kelayakan = KelayakanPendaftaran::periksa($data['nik'], (int) $data['angkatan_id']);
 
         if (! $kelayakan->boleh) {

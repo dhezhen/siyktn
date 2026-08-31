@@ -146,7 +146,13 @@ class PendaftaranService
             ->whereIn('status', ['persiapan', 'berjalan'])
             ->orderBy('tahun')
             ->get()
-            ->filter(fn (Angkatan $a) => $a->sisa_kuota === null || $a->sisa_kuota > 0)
+            ->filter(function (Angkatan $a) {
+                $putraOpen = $a->sisa_kuota_putra === null || $a->sisa_kuota_putra > 0;
+                $putriOpen = $a->sisa_kuota_putri === null || $a->sisa_kuota_putri > 0;
+                $totalOpen = $a->sisa_kuota === null || $a->sisa_kuota > 0;
+
+                return $totalOpen && ($putraOpen || $putriOpen);
+            })
             ->values();
     }
 

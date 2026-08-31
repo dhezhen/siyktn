@@ -53,13 +53,19 @@
                             </td>
 
                             <td class="px-5 py-3 text-slate-700">
-                                {{ $item->peserta_aktif_count }}
-                                @if ($item->kuota > 0)
-                                    <span class="text-slate-400">/ {{ $item->kuota }}</span>
-                                    @if ($item->sisa_kuota === 0)
-                                        <x-badge color="rose">penuh</x-badge>
+                                <div>
+                                    <span class="font-medium">{{ $item->peserta_aktif_count }}</span>
+                                    @if ($item->kuota > 0)
+                                        <span class="text-slate-400">/ {{ $item->kuota }} total</span>
+                                        @if ($item->sisa_kuota === 0)
+                                            <x-badge color="rose">penuh</x-badge>
+                                        @endif
                                     @endif
-                                @endif
+                                </div>
+                                <div class="mt-0.5 text-xs text-slate-500">
+                                    L: {{ $item->peserta_putra_aktif_count }}{{ $item->kuota_putra > 0 ? '/'.$item->kuota_putra : '' }} &middot;
+                                    P: {{ $item->peserta_putri_aktif_count }}{{ $item->kuota_putri > 0 ? '/'.$item->kuota_putri : '' }}
+                                </div>
                             </td>
 
                             <td class="px-5 py-3">

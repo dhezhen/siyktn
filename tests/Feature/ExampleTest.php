@@ -2,18 +2,21 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
     /**
-     * A basic test example.
+     * Halaman depan bukan lagi halaman sambutan bawaan Laravel. Seluruh
+     * isinya berada di balik login, jadi tamu langsung diarahkan ke sana.
      */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_halaman_depan_meminta_login(): void
     {
-        $response = $this->get('/');
+        $this->get('/')->assertRedirect(route('login'));
+    }
 
-        $response->assertStatus(200);
+    public function test_tamu_diminta_login_sebelum_masuk_dashboard(): void
+    {
+        $this->get('/dashboard')->assertRedirect(route('login'));
     }
 }

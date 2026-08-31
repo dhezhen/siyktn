@@ -71,7 +71,15 @@ class Menu
         $visible = [];
 
         foreach ($items as $item) {
+            $mengelompokkan = ($item['children'] ?? []) !== [];
+
             $item['children'] = static::filter($item['children'] ?? []);
+
+            // Header yang menampung menu lain ikut hilang begitu seluruh isinya
+            // tidak boleh dilihat user ini — jangan sampai tersisa judul kosong.
+            if (($item['type'] ?? 'route') === 'header' && $mengelompokkan && $item['children'] === []) {
+                continue;
+            }
 
             if (static::allowed($item)) {
                 $visible[] = $item;
@@ -120,7 +128,10 @@ class Menu
         foreach ($items as $index => $item) {
             $type = $item['type'] ?? 'route';
 
-            if ($type === 'header' && ! static::hasEntryAfter($items, $index)) {
+            // Header yang isinya menjadi anaknya sendiri sudah lolos seleksi di
+            // filter(); yang diperiksa di sini hanya header gaya lama, yang
+            // "memiliki" menu sesudahnya tanpa hubungan induk-anak.
+            if ($type === 'header' && $item['children'] === [] && ! static::hasEntryAfter($items, $index)) {
                 continue;
             }
 

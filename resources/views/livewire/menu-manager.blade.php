@@ -147,11 +147,13 @@
                         <select wire:model="parent_id"
                                 class="block w-full rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
                             <option value="">— Menu utama —</option>
-                            @foreach ($parentOptions as $option)
-                                @continue($option->id === $editingId)
-                                <option value="{{ $option->id }}">{{ $option->title }}</option>
+                            @foreach ($parentOptions as $id => $label)
+                                <option value="{{ $id }}">{{ $label }}</option>
                             @endforeach
                         </select>
+                        <p class="mt-1 text-xs text-slate-500">
+                            Pilih headernya untuk memasukkan menu ini ke sebuah kelompok.
+                        </p>
                         @error('parent_id') <p class="mt-1 text-xs text-rose-600">{{ $message }}</p> @enderror
                     </div>
 

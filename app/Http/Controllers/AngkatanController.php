@@ -25,7 +25,11 @@ class AngkatanController extends Controller implements HasMiddleware
     public function index(Request $request): View
     {
         $angkatan = Angkatan::query()
-            ->withCount(['pendaftaran as peserta_aktif_count' => fn ($q) => $q->aktif()])
+            ->withCount([
+                'pendaftaran as peserta_aktif_count' => fn ($q) => $q->whereIn('status_pendaftaran', ['menunggu', 'disetujui'])->where('status', 'aktif'),
+                'pendaftaran as peserta_putra_aktif_count' => fn ($q) => $q->whereIn('status_pendaftaran', ['menunggu', 'disetujui'])->where('status', 'aktif')->whereHas('peserta', fn ($p) => $p->where('jenis_kelamin', 'L')),
+                'pendaftaran as peserta_putri_aktif_count' => fn ($q) => $q->whereIn('status_pendaftaran', ['menunggu', 'disetujui'])->where('status', 'aktif')->whereHas('peserta', fn ($p) => $p->where('jenis_kelamin', 'P')),
+            ])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('q'), fn ($q) => $q->where(fn ($sub) => $sub
                 ->where('nama', 'like', '%'.$request->string('q').'%')
@@ -42,7 +46,9 @@ class AngkatanController extends Controller implements HasMiddleware
     {
         $angkatan->loadCount([
             'pendaftaran',
-            'pendaftaran as peserta_aktif_count' => fn ($q) => $q->aktif(),
+            'pendaftaran as peserta_aktif_count' => fn ($q) => $q->whereIn('status_pendaftaran', ['menunggu', 'disetujui'])->where('status', 'aktif'),
+            'pendaftaran as peserta_putra_aktif_count' => fn ($q) => $q->whereIn('status_pendaftaran', ['menunggu', 'disetujui'])->where('status', 'aktif')->whereHas('peserta', fn ($p) => $p->where('jenis_kelamin', 'L')),
+            'pendaftaran as peserta_putri_aktif_count' => fn ($q) => $q->whereIn('status_pendaftaran', ['menunggu', 'disetujui'])->where('status', 'aktif')->whereHas('peserta', fn ($p) => $p->where('jenis_kelamin', 'P')),
             'pendaftaran as peserta_lulus_count' => fn ($q) => $q->where('status', 'lulus'),
         ]);
 
@@ -57,7 +63,7 @@ class AngkatanController extends Controller implements HasMiddleware
 
     public function create(): View
     {
-        return view('angkatan.form', ['angkatan' => new Angkatan(['tahun' => now()->year, 'status' => 'persiapan'])]);
+        return view('angkatan.form', ['angkatan' => new Angkatan(['tahun' => now()->year, 'status' => 'persiapan', 'kuota' => 0, 'kuota_putra' => 0, 'kuota_putri' => 0])]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -110,6 +116,8 @@ class AngkatanController extends Controller implements HasMiddleware
             'tanggal_mulai' => ['nullable', 'date'],
             'tanggal_selesai' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
             'kuota' => ['required', 'integer', 'min:0', 'max:9999'],
+            'kuota_putra' => ['required', 'integer', 'min:0', 'max:9999'],
+            'kuota_putri' => ['required', 'integer', 'min:0', 'max:9999'],
             'status' => ['required', Rule::in(['persiapan', 'berjalan', 'selesai'])],
             'keterangan' => ['nullable', 'string', 'max:1000'],
         ], [
@@ -121,7 +129,9 @@ class AngkatanController extends Controller implements HasMiddleware
             'tahun' => 'tahun',
             'tanggal_mulai' => 'tanggal mulai',
             'tanggal_selesai' => 'tanggal selesai',
-            'kuota' => 'kuota',
+            'kuota' => 'kuota total',
+            'kuota_putra' => 'kuota putra',
+            'kuota_putri' => 'kuota putri',
             'status' => 'status',
             'keterangan' => 'keterangan',
         ]);

@@ -50,6 +50,24 @@ middleware `permission:`/`@can` di kode, dan kolom `permission` pada tabel `menu
 - Menu hanya tampil bila `permission`-nya `null` atau dimiliki user aktif.
 - Cache menu di-flush otomatis setiap tabel `menus` berubah (lihat `Menu::booted()`).
 
+### Pengelompokan
+
+Setiap menu adalah **anak dari headernya** (`parent_id`), bukan sekadar menu yang
+kebetulan berada di bawahnya. Di sidebar, header yang punya anak dirender sebagai
+**kelompok yang bisa dibuka-tutup** — lengkap dengan ikon dan tanda panah — dan
+terbuka sendiri bila halaman yang sedang dibuka ada di dalamnya.
+
+- Karena header kini berupa tombol, ia **wajib punya ikon**; tanpa itu jatuh ke
+  ikon `dot` dan terlihat janggal.
+- Header ikut hilang begitu **seluruh isinya** tidak boleh dilihat user, sehingga
+  tidak pernah tersisa judul kelompok kosong.
+- Menu baru dari seeder selalu ditaruh di **akhir kelompoknya**. Jangan kembali
+  memakai penghitung urutan global: pada database yang sudah terisi, nomornya
+  bertabrakan dengan data lama dan menu baru mendarat di kelompok tetangga.
+- Susunan datar gaya lama (header dan isinya sama-sama di level atas) masih
+  didukung `App\Support\Menu`, supaya menu yang pernah diatur manual tidak rusak.
+  Header tanpa anak tetap dirender sebagai label kecil, bukan dropdown.
+
 ## Data
 
 - Data yang punya relasi ke transaksi memakai `SoftDeletes`, bukan hapus permanen.
@@ -81,7 +99,32 @@ terpotong oleh tabel yang memakai `overflow-x-auto`.
 
 Ikon baku: `eye` lihat, `pencil` ubah, `trash` hapus, `plus` tambah, `key` hak akses,
 `restore` pulihkan, `eye-slash` sembunyikan/nonaktifkan, `identification` berkas KTP,
-`download` ekspor, `upload` impor, `check` setujui, `x-mark` tolak.
+`download` ekspor, `upload` impor, `check` setujui, `x-mark` tolak,
+`switch` pindahkan, `logout` keluarkan dari kelompok,
+`academic` muhaffizh, `book` halaqah.
+
+### Grafik
+
+Komponen `<x-grafik.garis>`, `<x-grafik.batang>`, dan `<x-grafik.tumpuk>` —
+SVG yang dirender server, tanpa pustaka grafik tambahan. Parameternya terkumpul
+di `App\Support\Grafik`.
+
+- **Warnanya sudah diuji, jangan diganti tanpa menguji ulang.** Hex-nya bukan
+  pilihan selera: tiap set diperiksa jarak warnanya terhadap kartu putih untuk
+  penglihatan normal maupun buta warna. Hasil dan kegagalannya dicatat di
+  docblock `Grafik`. Contoh nyata: emerald + sky terasa wajar karena badge
+  aplikasi memakai keduanya, tetapi sebagai dua garis ia **gagal** (ΔE 14,0,
+  di bawah ambang 15) dan sudah diganti emerald + oranye.
+- **Satu sumbu, satu satuan.** Jangan memasang dua skala Y di satu grafik —
+  perbandingannya jadi karangan. Dua ukuran berbeda berarti dua grafik.
+- Batang memakai **satu warna**; panjangnya yang mengukur, bukan warnanya.
+  Meragamkan warna per batang membuang satu-satunya kanal yang tersisa.
+- **Setiap angka harus terjangkau tanpa hover**: tiap grafik menyertakan
+  "Lihat sebagai tabel", dan sebaran kualitas memakai legenda berangka karena
+  dua warnanya di bawah kontras 3:1.
+- Hindari bentuk sebaris `@php(...)` di dalam komponen SVG. Dengan pemanggilan
+  fungsi bersarang, Blade mengompilasinya menjadi blok PHP tanpa penutup dan
+  menelan sisa berkasnya. Hitung geometri di satu blok `@php … @endphp` di atas.
 
 ### Notifikasi
 
@@ -105,6 +148,27 @@ Ikon baku: `eye` lihat, `pencil` ubah, `trash` hapus, `plus` tambah, `key` hak a
 - Konfirmasi hapus memakai `<x-confirm-delete :action="..." />`, bukan `confirm()` browser.
 - Tabel besar memakai komponen Livewire dengan paginasi server-side, bukan render semua baris.
 
+## Dashboard
+
+Isinya **mengikuti peran**, bukan sekadar menyembunyikan kartu yang tidak boleh
+dilihat.
+
+| Peran | Yang tampil |
+|---|---|
+| super-admin / admin | angka sistem (pengguna, role, menu, peserta) + grafik seluruh halaqah + log aktivitas |
+| operator | angka operasional (peserta, muhaffizh, halaqah) + grafik seluruh halaqah |
+| muhaffizh | **hanya bimbingannya**: Halaqah Saya, Santri Binaan, Setoran Pekan Ini, Ziyadah Terkumpul + grafik halaqah asuhannya |
+| pengguna | kartu sambutan beserta pintasan seadanya |
+
+- Kartu yang kosong **karena izin** tidak ditampilkan sama sekali. "Aktivitas
+  Terakhir" yang kosong terbaca sebagai "belum ada aktivitas", padahal
+  sebenarnya "Anda tidak boleh melihatnya".
+- Muhaffizh tidak diberi angka pesantren. "Total Peserta 34" tidak menjawab
+  pertanyaan apa pun yang ia punya pagi itu.
+- Setelah mengubah `config/rbac.php`, **jalankan ulang** `PermissionSeeder` lalu
+  `RoleSeeder`. Role yang menyimpang dari katalog pernah membuat muhaffizh
+  memegang `setoran.view-all` dan melihat data seluruh pesantren.
+
 ## Bahasa
 
 Pesan validasi, paginasi, dan autentikasi diterjemahkan di `lang/id/` dan `lang/id.json`.
@@ -127,6 +191,7 @@ Akun bawaan (kata sandi semua: `password`):
 | `superadmin` | super-admin | akses penuh |
 | `admin` | admin | mengelola pengguna & data |
 | `operator` | operator | input data harian |
+| `muhaffizh` | muhaffizh | pembimbing hafalan (dibuat `DemoDataSeeder`) |
 
 **Ganti kata sandi ketiga akun ini sebelum sistem dipakai sungguhan.**
 
@@ -144,6 +209,9 @@ Akun bawaan (kata sandi semua: `password`):
 | 7 | Pendaftaran mandiri peserta + verifikasi + email | ✅ |
 | 8 | Pemisahan peserta (orang) dan pendaftaran (per angkatan) | ✅ |
 | 9 | Perbaikan UI/UX: tombol aksi berikon, transisi, bahasa Indonesia | ✅ |
+| 10 | Modul Muhaffizh & Halaqah beserta penempatan santri | ✅ |
+| 11 | Setoran hafalan (satuan halaman) + pembatasan data muhaffizh | ✅ |
+| 12 | Grafik hafalan & dashboard yang menyesuaikan peran | ✅ |
 
 ## Model data peserta
 
@@ -180,6 +248,114 @@ data lama, pendaftar harus mengisi **NIK dan tanggal lahir yang keduanya cocok**
 Bila NIK cocok tapi tanggal lahir tidak, pendaftaran ditolak dengan pesan netral.
 Jangan menambahkan endpoint pencarian NIK di halaman publik — itu membuat siapa
 pun bisa memancing nama orang lain.
+
+## Model data halaqah
+
+| Tabel | Artinya | Aturan |
+|---|---|---|
+| `muhaffizh` | **pembimbing hafalan** | `user_id` nullable & unik — boleh didata sebelum punya akun |
+| `halaqah` | **kelompok binaan** dalam satu angkatan | `unique(angkatan_id, kode)`, diampu seorang muhaffizh |
+| `anggota_halaqah` | **keanggotaan** seorang santri di sebuah halaqah | menunjuk `pendaftaran_id`, bukan `peserta_id` |
+
+Tiga hal yang gampang salah:
+
+1. **Keanggotaan melekat pada pendaftaran, bukan pada orangnya.** Satu orang bisa
+   ikut karantina berkali-kali; kalau keanggotaan melekat pada `peserta`, halaqah
+   angkatan lalu dan angkatan sekarang tercampur dan seluruh rekap hafalan ikut salah.
+2. **Santri yang pindah tidak dihapus barisnya**, melainkan ditutup dengan
+   `tanggal_keluar` lewat `AnggotaHalaqah::tutup()` — supaya riwayat setorannya tetap
+   bisa ditelusuri ke muhaffizh yang membimbingnya saat itu.
+3. **"Satu santri hanya aktif di satu halaqah"** ditegakkan database, bukan hanya
+   controller. MySQL tidak punya *partial unique index*, jadi dipakai kolom bayangan
+   `kunci_aktif`: berisi `pendaftaran_id` selama aktif, `NULL` setelah ditutup — dan
+   nilainya diisi otomatis di `AnggotaHalaqah::booted()`, tidak pernah diisi tangan.
+   Karena kolom itu unik se-tabel, urutan saat memindahkan santri **wajib** tutup
+   dulu baru buka yang baru.
+
+Syarat seorang santri boleh ditempatkan di sebuah halaqah — semuanya diperiksa
+ulang di server lewat `HalaqahController::calonSantri()`, karena daftar di layar
+bisa saja sudah basi:
+
+| Syarat | Alasan |
+|---|---|
+| pendaftaran `disetujui` + `aktif` | yang belum diverifikasi belum jadi santri |
+| angkatannya sama dengan angkatan halaqah | halaqah selalu milik satu angkatan |
+| jenis kelamin cocok | halaqah ikhwan dan akhwat dipisah |
+| belum punya keanggotaan aktif | dijaga juga oleh `kunci_aktif` |
+| halaqahnya `is_aktif` dan kuotanya cukup | `kuota = 0` berarti tidak dibatasi |
+
+Penempatan yang melebihi kuota **ditolak seluruhnya**, bukan sebagian, supaya
+petugas tahu persis siapa yang masuk dan siapa yang belum.
+
+## Akun login muhaffizh
+
+Muhaffizh tidak wajib punya akun — ia tetap bisa didata dan mengampu halaqah.
+Akun hanya diperlukan bila ia ingin masuk sendiri ke sistem.
+
+- **Role mengikuti tautan akun, bukan diingat petugas.** Mengisi `muhaffizh.user_id`
+  otomatis memberi role `muhaffizh`, dan melepasnya otomatis mencabut role itu —
+  diatur di `Muhaffizh::booted()` supaya berlaku untuk semua jalur: form, seeder,
+  maupun tinker. Role lain milik akun itu tidak ikut tersentuh, dan akun
+  **super admin sengaja dilewati**.
+- Pakai event `created` dan `updated` terpisah, bukan `saved`: pada baris yang baru
+  dibuat `wasChanged()` tidak menandai apa pun, sehingga muhaffizh yang langsung
+  dibuat lengkap dengan `user_id` akan terlewat.
+- Tombol **Buatkan Akun** di halaman detail membuat pengguna + role + kata sandi
+  sementara sekaligus. Kata sandinya ditampilkan **sekali** di pesan sukses, dan
+  `must_change_password` memaksa penggantian saat login pertama.
+- Email muhaffizh wajib diisi lebih dulu, karena dipakai untuk masuk dan
+  memulihkan kata sandi.
+- Dropdown **Akun Pengguna** hanya menawarkan akun aktif yang belum memikul peran
+  lain, supaya akun admin atau super admin tidak bisa tertaut karena salah klik.
+
+## Setoran hafalan
+
+Satuannya **halaman**, sesuai kebiasaan pencatatan di YKTN. `jumlah_halaman`
+(kelipatan 0,5) adalah satu-satunya angka yang dijumlahkan saat rekap; juz,
+surah, dan ayat hanya konteks. Jangan menambahkan kolom rentang halaman di
+samping jumlahnya — dua angka yang bisa saling bertentangan merusak rekap.
+
+### Penyimak bukan pencatat
+
+| Kolom | Artinya |
+|---|---|
+| `muhaffizh_id` | siapa yang **menyimak** setoran |
+| `dicatat_oleh` | siapa yang **mengetik** ke sistem |
+
+Pemisahan ini yang membuat muhaffizh **tidak wajib berakun**: setorannya dicatat
+di kartu, lalu dientri operator — `muhaffizh_id` tetap menunjuk orang yang benar
+sehingga rekap per muhaffizh akurat. Karena itu role `operator` sengaja diberi
+`setoran.create`; tanpa itu, halaqah yang pengampunya tidak berakun tidak akan
+pernah punya data.
+
+`muhaffizh_id` **disimpan eksplisit**, bukan diturunkan dari
+`halaqah.muhaffizh_id`, dan tidak ikut diperbarui saat setoran diedit. Kalau
+pengampu sebuah halaqah diganti di tengah program, seluruh setoran lama akan
+diam-diam berpindah atas nama pengampu baru — dan itu baru ketahuan saat rekap
+akhir.
+
+### Pembatasan data
+
+Muhaffizh hanya melihat halaqah asuhannya. Batasnya ditentukan permission
+**`{modul}.view-all`**, bukan nama role — lihat trait
+`App\Http\Controllers\Concerns\MembatasiKeMuhaffizh`.
+
+- `admin` dan `operator` memiliki `halaqah.view-all` dan `setoran.view-all`,
+  jadi melihat seluruh data. Operator memang perlu, karena ia yang mengentri
+  kartu milik muhaffizh yang tidak berakun.
+- `muhaffizh` tidak memilikinya, sehingga datanya dipersempit ke dirinya sendiri
+  dan halaman daftarnya berjudul **Halaqah Saya**.
+- Id yang dikirim formulir **selalu diperiksa ulang** di server
+  (`anggotaBolehDisentuh`), bukan sekadar disaring saat menampilkan pilihan.
+- Pembatasan berlaku di **seluruh** permukaan, termasuk yang mudah terlupa:
+  daftar, dropdown filter, **ekspor CSV**, dan **kartu dashboard**. Dashboard
+  muhaffizh menampilkan angkanya sendiri (Halaqah Saya, Santri Binaan, Setoran
+  Pekan Ini, Ziyadah Terkumpul), bukan angka seluruh pesantren.
+
+Yang **belum** dibatasi: daftar Peserta dan daftar Muhaffizh masih tampil utuh
+bagi muhaffizh, mengikuti permission `peserta.view` dan `muhaffizh.view` yang
+memang dimilikinya. Ia perlu itu untuk menelusuri data santri dari halaman
+halaqah.
 
 ## Pendaftaran peserta
 
