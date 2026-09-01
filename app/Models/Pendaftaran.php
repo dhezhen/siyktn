@@ -267,9 +267,22 @@ class Pendaftaran extends Model
             ->orderByDesc('nomor_induk')
             ->value('nomor_induk');
 
-        $urutan = $terakhir ? ((int) Str::afterLast($terakhir, '-')) + 1 : 1;
+        if ($terakhir) {
+            $urutan = str_contains($terakhir, '.') 
+                ? (int) Str::afterLast($terakhir, '.') 
+                : (int) Str::afterLast($terakhir, '-');
+            $urutan++;
+        } else {
+            $urutan = 1;
+        }
 
-        return sprintf('%s-%04d', $angkatan->kode, $urutan);
+        $batch = Str::after($angkatan->kode, '-'); 
+        if (!$batch || !is_numeric($batch)) {
+           preg_match('/\d+/', $angkatan->nama, $matches);
+           $batch = $matches[0] ?? $angkatan->kode;
+        }
+
+        return sprintf('YKTN.%d.%s.%04d', $angkatan->tahun, $batch, $urutan);
     }
 
     /**

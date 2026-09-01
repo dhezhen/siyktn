@@ -42,6 +42,7 @@ class SetoranController extends Controller implements HasMiddleware
             ])
             ->when($request->filled('halaqah_id'),
                 fn ($q) => $q->untukHalaqah($request->integer('halaqah_id')))
+            ->when($request->filled('anggota_halaqah_id'), fn ($q) => $q->where('anggota_halaqah_id', $request->integer('anggota_halaqah_id')))
             ->when($request->filled('jenis'), fn ($q) => $q->where('jenis', $request->string('jenis')))
             ->when($request->filled('dari'), fn ($q) => $q->whereDate('tanggal', '>=', $request->date('dari')))
             ->when($request->filled('sampai'), fn ($q) => $q->whereDate('tanggal', '<=', $request->date('sampai')))
@@ -52,10 +53,33 @@ class SetoranController extends Controller implements HasMiddleware
             ->paginate(20)
             ->withQueryString();
 
+        $grafik = null;
+        $santriGrafik = null;
+        if ($request->filled('anggota_halaqah_id')) {
+            $anggota_id = $request->integer('anggota_halaqah_id');
+            $grafikQuery = $this->terlingkup()
+                ->where('anggota_halaqah_id', $anggota_id)
+                ->selectRaw('DATE(tanggal) as tanggal, SUM(jumlah_halaman) as total')
+                ->groupByRaw('DATE(tanggal)')
+                ->orderByRaw('DATE(tanggal)')
+                ->get();
+
+            $grafik = $grafikQuery->map(function ($item) {
+                return [
+                    'x' => \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d M'),
+                    'y' => (float) $item->total,
+                ];
+            });
+            
+            $santriGrafik = AnggotaHalaqah::with('pendaftaran.peserta:id,nama')->find($anggota_id);
+        }
+
         return view('setoran.index', [
             'setoran' => $setoran,
             'daftarHalaqah' => $this->halaqahTerlingkup()->get(['id', 'nama', 'kode', 'angkatan_id']),
             'rekap' => $this->rekapDaftar($request),
+            'grafik' => $grafik,
+            'santriGrafik' => $santriGrafik,
         ]);
     }
 
@@ -277,7 +301,7 @@ class SetoranController extends Controller implements HasMiddleware
     {
         return $request->validate([
             'anggota_halaqah_id' => ['required', 'integer', 'exists:anggota_halaqah,id'],
-            'tanggal' => ['required', 'date', 'before_or_equal:today'],
+            'tanggal' => ['required', 'date'],
             'jenis' => ['required', Rule::in(['ziyadah', 'murajaah'])],
             // Kelipatan 0,5 halaman: setengah halaman lazim dipakai.
             'jumlah_halaman' => ['required', 'numeric', 'min:0.5', 'max:100', 'multiple_of:0.5'],
@@ -285,7 +309,7 @@ class SetoranController extends Controller implements HasMiddleware
             'surah' => ['nullable', 'string', 'max:60'],
             'ayat_dari' => ['nullable', 'integer', 'min:1', 'max:286'],
             'ayat_sampai' => ['nullable', 'integer', 'min:1', 'max:286', 'gte:ayat_dari'],
-            'kualitas' => ['required', Rule::in(['mumtaz', 'jayyid', 'maqbul', 'perlu_diulang'])],
+            'kualitas' => ['required', Rule::in(['jayyid', 'jayyid_jiddan', 'mumtaz'])],
             'catatan' => ['nullable', 'string', 'max:1000'],
         ], [
             'tanggal.before_or_equal' => 'Setoran tidak bisa dicatat untuk tanggal yang belum tiba.',

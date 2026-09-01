@@ -36,7 +36,7 @@
                 </div>
 
                 @if (Route::has('profile.edit'))
-                    <a href="{{ route('profile.edit') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 transition duration-100 hover:bg-slate-50">
+                    <a href="{{ route('profile.edit') }}" wire:navigate class="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 transition duration-100 hover:bg-slate-50">
                         <x-icon name="user-circle" class="size-4 text-slate-400" /> Profil Saya
                     </a>
                 @endif

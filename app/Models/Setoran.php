@@ -35,7 +35,7 @@ class Setoran extends Model
     protected function casts(): array
     {
         return [
-            'tanggal' => 'date',
+            'tanggal' => 'datetime',
             'jumlah_halaman' => 'decimal:2',
             'juz' => 'integer',
             'ayat_dari' => 'integer',
@@ -112,9 +112,8 @@ class Setoran extends Model
     {
         return match ($this->kualitas) {
             'mumtaz' => 'Mumtaz',
+            'jayyid_jiddan' => 'Jayyid Jiddan',
             'jayyid' => 'Jayyid',
-            'maqbul' => 'Maqbul',
-            'perlu_diulang' => 'Perlu Diulang',
             default => (string) $this->kualitas,
         };
     }
@@ -123,27 +122,28 @@ class Setoran extends Model
     {
         return match ($this->kualitas) {
             'mumtaz' => 'emerald',
+            'jayyid_jiddan' => 'indigo',
             'jayyid' => 'sky',
-            'maqbul' => 'amber',
-            'perlu_diulang' => 'rose',
             default => 'slate',
         };
     }
 
-    /**
-     * Ringkasan bacaan, mis. "Al-Baqarah 1–16" atau "Juz 3".
-     */
     public function getBacaanAttribute(): string
     {
+        $parts = [];
+        
         if ($this->surah) {
             $ayat = $this->ayat_dari
-                ? ' '.$this->ayat_dari.($this->ayat_sampai ? '–'.$this->ayat_sampai : '')
+                ? ' ayat '.$this->ayat_dari.($this->ayat_sampai ? '–'.$this->ayat_sampai : '')
                 : '';
-
-            return $this->surah.$ayat;
+            $parts[] = $this->surah . $ayat;
         }
 
-        return $this->juz ? 'Juz '.$this->juz : '—';
+        if ($this->juz) {
+            $parts[] = 'Juz ' . $this->juz;
+        }
+
+        return count($parts) > 0 ? implode(', ', $parts) : '—';
     }
 
     /**

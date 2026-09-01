@@ -54,6 +54,14 @@ class AnggotaHalaqah extends Model
         return $this->hasMany(Setoran::class);
     }
 
+    public function setoranTerakhir()
+    {
+        return $this->hasOne(Setoran::class)->ofMany([
+            'tanggal' => 'max',
+            'id' => 'max',
+        ]);
+    }
+
     /**
      * Total halaman hafalan baru selama keanggotaan ini.
      */

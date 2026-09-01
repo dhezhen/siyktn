@@ -2,9 +2,10 @@
     <x-page-header :title="$halaqah->nama"
                    :subtitle="$halaqah->kode.' · '.$halaqah->jenis_kelamin_label.' · '.($halaqah->angkatan?->nama ?? 'tanpa angkatan')">
         <x-slot:actions>
-            <x-button :href="route('halaqah.index')" variant="secondary">Kembali</x-button>
+            <x-button :href="route('halaqah.index')" variant="secondary" icon="arrow-left" class="hidden sm:inline-flex">Kembali</x-button>
+            <x-button :href="route('halaqah.laporan', $halaqah)" variant="warning" icon="document-text">Rekap Syahadah</x-button>
             @can('halaqah.update')
-                <x-button :href="route('halaqah.edit', $halaqah)">Ubah Halaqah</x-button>
+                <x-button :href="route('halaqah.edit', $halaqah)" variant="primary" icon="pencil">Ubah</x-button>
             @endcan
         </x-slot:actions>
     </x-page-header>
@@ -103,20 +104,29 @@
 
                                     @php($ziyadah = (float) ($item->ziyadah_halaman ?? 0))
                                     <td class="px-5 py-3">
-                                        <p class="font-medium text-slate-800">
-                                            {{ rtrim(rtrim(number_format($ziyadah, 1, ',', '.'), '0'), ',') }} hlm
-                                        </p>
-                                        <p class="text-xs text-slate-500">
-                                            {{ \App\Models\Setoran::setaraJuz($ziyadah) }}
-                                            &middot; {{ $item->setoran_count }}x setor
-                                        </p>
+                                        <div class="p-2">
+                                            <p class="font-medium text-slate-800">
+                                                {{ $item->setoranTerakhir ? $item->setoranTerakhir->bacaan : 'Belum setor' }}
+                                            </p>
+                                            <p class="text-xs text-slate-500">
+                                                Total: {{ rtrim(rtrim(number_format($ziyadah, 1, ',', '.'), '0'), ',') }} hlm
+                                                &middot; {{ $item->setoran_count }}x setor
+                                            </p>
+                                        </div>
                                     </td>
 
                                     <td class="px-5 py-3">
-                                        <div class="flex items-center justify-end gap-0.5">
+                                        <div class="flex items-center justify-end gap-2">
+                                            <x-button icon="clock" size="sm" variant="secondary"
+                                                      :href="route('setoran.index', ['anggota_halaqah_id' => $item->id, 'halaqah_id' => $halaqah->id])">
+                                                Riwayat
+                                            </x-button>
+
                                             @can('setoran.create')
-                                                <x-icon-button icon="plus" label="Catat setoran santri ini" variant="primary"
-                                                               :href="route('setoran.create', ['halaqah_id' => $halaqah->id, 'anggota_halaqah_id' => $item->id])" />
+                                                <x-button icon="plus" size="sm" variant="primary"
+                                                          :href="route('setoran.create', ['halaqah_id' => $halaqah->id, 'anggota_halaqah_id' => $item->id])">
+                                                    Setor
+                                                </x-button>
                                             @endcan
 
                                             @can('halaqah.update')

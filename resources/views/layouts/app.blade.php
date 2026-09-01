@@ -4,12 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="description" content="Sistem Informasi Karantina Tahfizh">
 
     <title>{{ isset($title) ? $title.' — '.setting('app_name', config('app.name')) : setting('app_name', config('app.name')) }}</title>
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}">
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
     @livewireStyles
 </head>
 <body class="h-full bg-slate-100 text-slate-800 antialiased">

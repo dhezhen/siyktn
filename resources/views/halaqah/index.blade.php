@@ -115,9 +115,12 @@
                             </td>
 
                             <td class="px-5 py-3">
-                                <div class="flex items-center justify-end gap-0.5">
+                                <div class="flex items-center justify-end gap-2">
                                     <x-icon-button icon="eye" label="Lihat detail halaqah"
                                                    :href="route('halaqah.show', $item)" />
+
+                                    <x-icon-button icon="document-text" label="Rekap syahadah" variant="warning"
+                                                   :href="route('halaqah.laporan', $item)" />
 
                                     @can('halaqah.update')
                                         <x-icon-button icon="pencil" label="Ubah halaqah"

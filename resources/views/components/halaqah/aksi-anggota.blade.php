@@ -9,12 +9,11 @@
     lewat x-teleport supaya tidak terpotong oleh tabel yang overflow-x-auto,
     persis seperti pada x-confirm-delete.
 --}}
-<div class="flex items-center justify-end gap-0.5">
+<div class="flex items-center justify-end gap-2">
 
     {{-- Pindah halaqah --}}
     <div x-data="{ open: false }" class="inline-flex">
-        <x-icon-button icon="switch" label="Pindahkan ke halaqah lain"
-                       variant="primary" @click="open = true" />
+        <x-button icon="switch" size="sm" variant="secondary" @click="open = true">Pindah</x-button>
 
         <template x-teleport="body">
             <div x-show="open" x-cloak @keydown.escape.window="open = false"
@@ -88,8 +87,7 @@
 
     {{-- Keluarkan dari halaqah --}}
     <div x-data="{ open: false }" class="inline-flex">
-        <x-icon-button icon="logout" label="Keluarkan dari halaqah"
-                       variant="danger" @click="open = true" />
+        <x-button icon="logout" size="sm" variant="danger" @click="open = true">Keluar</x-button>
 
         <template x-teleport="body">
             <div x-show="open" x-cloak @keydown.escape.window="open = false"

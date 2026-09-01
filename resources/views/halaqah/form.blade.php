@@ -16,7 +16,13 @@
             </x-empty-state>
         </x-card>
     @else
-        <form method="POST" action="{{ $editing ? route('halaqah.update', $halaqah) : route('halaqah.store') }}">
+        <form method="POST" action="{{ $editing ? route('halaqah.update', $halaqah) : route('halaqah.store') }}"
+              x-data="{
+                  kode: '{{ old('kode', $halaqah->kode) }}',
+                  nama: '{{ old('nama', $halaqah->nama) }}',
+                  jenis_kelamin: '{{ old('jenis_kelamin', $halaqah->jenis_kelamin ?? 'L') }}',
+                  editing: {{ $editing ? 'true' : 'false' }}
+              }">
             @csrf
             @if ($editing) @method('PUT') @endif
 
@@ -33,14 +39,25 @@
                                 @endforeach
                             </x-select>
 
-                            <x-input name="kode" label="Kode" required :value="old('kode', $halaqah->kode)"
+                            <x-input name="kode" label="Kode" required x-model="kode"
+                                     x-on:input="kode = kode.toUpperCase().replace(/\s+/g, '-').replace(/[^A-Z0-9-]/g, '').replace(/-+/g, '-'); $el.dataset.touched = true"
                                      placeholder="mis. H-01"
-                                     hint="Cukup unik di dalam angkatannya." />
+                                     hint="Kode otomatis disesuaikan (huruf besar, tanpa spasi)." />
 
-                            <x-input name="nama" label="Nama Halaqah" required :value="old('nama', $halaqah->nama)"
+                            <x-input name="nama" label="Nama Halaqah" required x-model="nama"
+                                     x-on:input="if (!editing && !document.getElementById('kode').dataset.touched) kode = nama.toUpperCase().replace(/\s+/g, '-').replace(/[^A-Z0-9-]/g, '').replace(/-+/g, '-');"
                                      placeholder="mis. Halaqah Al-Fatih" />
 
-                            <x-select name="jenis_kelamin" label="Peruntukan" required
+                            <x-select name="jenis_kelamin" label="Peruntukan" required x-model="jenis_kelamin"
+                                      x-on:change="
+                                          if (!document.getElementById('kode').dataset.touched) {
+                                              if (jenis_kelamin === 'L') {
+                                                  kode = kode.replace(/^AKH-/, 'IKH-');
+                                              } else {
+                                                  kode = kode.replace(/^IKH-/, 'AKH-');
+                                              }
+                                          }
+                                      "
                                       hint="Santri hanya bisa ditempatkan bila jenis kelaminnya cocok.">
                                 <option value="L" @selected(old('jenis_kelamin', $halaqah->jenis_kelamin) === 'L')>Ikhwan (laki-laki)</option>
                                 <option value="P" @selected(old('jenis_kelamin', $halaqah->jenis_kelamin) === 'P')>Akhwat (perempuan)</option>
@@ -69,10 +86,22 @@
                 <div class="space-y-4">
                     <x-card title="Muhaffizh Pengampu">
                         <x-select name="muhaffizh_id" label="Muhaffizh"
+                                  x-on:change="
+                                      if (!editing && $event.target.selectedIndex > 0) {
+                                          let muhaffizhName = $event.target.options[$event.target.selectedIndex].dataset.nama;
+                                          if (nama === '' || nama.startsWith('Halaqah ')) {
+                                              nama = 'Halaqah ' + muhaffizhName;
+                                              if (!document.getElementById('kode').dataset.touched) {
+                                                  let prefix = jenis_kelamin === 'L' ? 'IKH-' : 'AKH-';
+                                                  kode = prefix + muhaffizhName.toUpperCase().replace(/\s+/g, '-').replace(/[^A-Z0-9-]/g, '').replace(/-+/g, '-');
+                                              }
+                                          }
+                                      }
+                                  "
                                   hint="Boleh dikosongkan dulu bila pengampunya belum ditentukan.">
                             <option value="">— Belum ditugaskan —</option>
                             @foreach ($daftarMuhaffizh as $item)
-                                <option value="{{ $item->id }}" @selected(old('muhaffizh_id', $halaqah->muhaffizh_id) == $item->id)>
+                                <option value="{{ $item->id }}" data-nama="{{ $item->nama }}" @selected(old('muhaffizh_id', $halaqah->muhaffizh_id) == $item->id)>
                                     {{ $item->nama }} ({{ $item->kode }}) — {{ $item->jenis_kelamin === 'L' ? 'Ustadz (L)' : 'Ustadzah (P)' }}
                                 </option>
                             @endforeach

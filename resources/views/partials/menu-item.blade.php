@@ -41,6 +41,7 @@
 @else
     <a href="{{ \App\Support\Menu::url($item) }}" target="{{ $item['target'] ?? '_self' }}"
        @if ($active) aria-current="page" @endif
+       wire:navigate
        class="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition duration-150 ease-out {{ $active ? 'bg-emerald-600/15 text-emerald-400' : 'hover:bg-white/5 hover:text-white' }}">
         @if ($active)
             <span class="absolute inset-y-1.5 -left-1 w-1 rounded-full bg-emerald-400"></span>

@@ -71,7 +71,7 @@ class HalaqahController extends Controller implements HasMiddleware
         $halaqah->load(['angkatan', 'muhaffizh'])->loadCount('anggotaAktif');
 
         $anggota = $halaqah->anggota()
-            ->with(['pendaftaran.peserta:id,nama,jenis_kelamin,no_hp,foto'])
+            ->with(['pendaftaran.peserta:id,nama,jenis_kelamin,no_hp,foto', 'setoranTerakhir'])
             ->withSum(['setoran as ziyadah_halaman' => fn ($q) => $q->where('jenis', 'ziyadah')], 'jumlah_halaman')
             ->withCount('setoran')
             ->orderByDesc('tanggal_bergabung')
@@ -91,6 +91,121 @@ class HalaqahController extends Controller implements HasMiddleware
                 ->limit(10)
                 ->get(),
         ]);
+    }
+
+    public function laporan(Halaqah $halaqah): View
+    {
+        $this->pastikanBolehDilihat($halaqah);
+
+        $halaqah->load(['angkatan', 'muhaffizh']);
+
+        $anggota = $halaqah->anggotaAktif()
+            ->with(['pendaftaran.peserta'])
+            ->withSum(['setoran as ziyadah_halaman' => fn ($q) => $q->where('jenis', 'ziyadah')], 'jumlah_halaman')
+            ->withSum(['setoran as murajaah_halaman' => fn ($q) => $q->where('jenis', 'murajaah')], 'jumlah_halaman')
+            ->withCount('setoran')
+            ->get();
+
+        foreach ($anggota as $a) {
+            $setorans = $a->setoran()->get(['kualitas']);
+            $scoreTotal = 0;
+            $count = 0;
+            foreach ($setorans as $s) {
+                $score = match ($s->kualitas) {
+                    'mumtaz' => 4,
+                    'jayyid_jiddan' => 3,
+                    'jayyid' => 2,
+                    default => 0,
+                };
+                if ($score > 0) {
+                    $scoreTotal += $score;
+                    $count++;
+                }
+            }
+            $a->rata_rata_skor = $count > 0 ? $scoreTotal / $count : 0;
+            $a->predikat = match (true) {
+                $a->rata_rata_skor >= 3.5 => 'Mumtaz',
+                $a->rata_rata_skor >= 2.5 => 'Jayyid Jiddan',
+                $a->rata_rata_skor > 0 => 'Jayyid',
+                default => '-',
+            };
+        }
+
+        return view('halaqah.laporan', [
+            'halaqah' => $halaqah,
+            'anggota' => $anggota,
+        ]);
+    }
+
+    public function eksporLaporan(Halaqah $halaqah): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $this->pastikanBolehDilihat($halaqah);
+
+        $halaqah->load(['angkatan', 'muhaffizh']);
+
+        $anggota = $halaqah->anggotaAktif()
+            ->with(['pendaftaran.peserta'])
+            ->withSum(['setoran as ziyadah_halaman' => fn ($q) => $q->where('jenis', 'ziyadah')], 'jumlah_halaman')
+            ->withSum(['setoran as murajaah_halaman' => fn ($q) => $q->where('jenis', 'murajaah')], 'jumlah_halaman')
+            ->withCount('setoran')
+            ->get();
+
+        foreach ($anggota as $a) {
+            $setorans = $a->setoran()->get(['kualitas']);
+            $scoreTotal = 0;
+            $count = 0;
+            foreach ($setorans as $s) {
+                $score = match ($s->kualitas) {
+                    'mumtaz' => 4,
+                    'jayyid_jiddan' => 3,
+                    'jayyid' => 2,
+                    default => 0,
+                };
+                if ($score > 0) {
+                    $scoreTotal += $score;
+                    $count++;
+                }
+            }
+            $a->rata_rata_skor = $count > 0 ? $scoreTotal / $count : 0;
+            $a->predikat = match (true) {
+                $a->rata_rata_skor >= 3.5 => 'Mumtaz',
+                $a->rata_rata_skor >= 2.5 => 'Jayyid Jiddan',
+                $a->rata_rata_skor > 0 => 'Jayyid',
+                default => '-',
+            };
+        }
+
+        $namaBerkas = 'laporan-syahadah-'.$halaqah->kode.'-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($anggota) {
+            $keluaran = fopen('php://output', 'w');
+
+            // BOM untuk UTF-8 Excel
+            fwrite($keluaran, "\xEF\xBB\xBF");
+            fputcsv($keluaran, [
+                'Nomor Induk / Nomor Syahadah', 'Nama Santri', 'Jenis Kelamin', 'Tempat Lahir', 'Tanggal Lahir',
+                'Hafalan Baru (Ziyadah)', 'Setara Juz', 'Rata-rata Skor', 'Predikat'
+            ]);
+
+            foreach ($anggota as $item) {
+                $peserta = $item->pendaftaran?->peserta;
+                $ziyadah = (float) ($item->ziyadah_halaman ?? 0);
+                
+                fputcsv($keluaran, [
+                    $item->pendaftaran?->nomor_induk ?: '-',
+                    $peserta?->nama ?? '-',
+                    $peserta?->jenis_kelamin_label ?? '-',
+                    $peserta?->tempat_lahir ?? '-',
+                    $peserta?->tanggal_lahir?->format('d/m/Y') ?? '-',
+                    rtrim(rtrim(number_format($ziyadah, 1, ',', '.'), '0'), ',') . ' Halaman',
+                    \App\Models\Setoran::setaraJuz($ziyadah),
+                    number_format($item->rata_rata_skor, 2, ',', '.'),
+                    $item->predikat,
+                ]);
+            }
+
+            fclose($keluaran);
+        }, $namaBerkas);
     }
 
     /**
