@@ -25,12 +25,12 @@ class Peserta extends Model
 
     protected $table = 'peserta';
 
-    protected array $activityFields = ['nama', 'nik', 'kewarganegaraan', 'negara', 'provinsi', 'kabupaten_kota', 'no_hp', 'email', 'boleh_mendaftar_lagi'];
+    protected array $activityFields = ['nama', 'nama_arab', 'nik', 'kewarganegaraan', 'negara', 'provinsi', 'kabupaten_kota', 'no_hp', 'email', 'boleh_mendaftar_lagi'];
 
     protected string $activityLabel = 'Peserta';
 
     protected $fillable = [
-        'nama', 'nik', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir',
+        'nama', 'nama_arab', 'nik', 'jenis_kelamin', 'tempat_lahir', 'tanggal_lahir',
         'kewarganegaraan', 'negara', 'provinsi', 'kabupaten_kota',
         'alamat', 'no_hp', 'email', 'nama_wali', 'no_hp_wali',
         'foto', 'ktp_path', 'boleh_mendaftar_lagi', 'alasan_cekal', 'user_id',

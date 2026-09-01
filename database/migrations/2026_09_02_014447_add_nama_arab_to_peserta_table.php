@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('peserta', function (Blueprint $table) {
-            //
+            $table->string('nama_arab', 150)->nullable()->after('nama');
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('peserta', function (Blueprint $table) {
-            //
+            $table->dropColumn('nama_arab');
         });
     }
 };

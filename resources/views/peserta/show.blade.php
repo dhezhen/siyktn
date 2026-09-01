@@ -44,6 +44,7 @@
                         @foreach ([
                             'NIK' => $peserta->nik,
                             'Nama Lengkap' => $peserta->nama,
+                            'Nama (Tulisan Arab)' => $peserta->nama_arab,
                             'Jenis Kelamin' => $peserta->jenis_kelamin_label,
                             'Kewarganegaraan' => $peserta->kewarganegaraan === 'WNA' ? 'WNA (Luar Negeri)' : 'WNI (Indonesia)',
                             'Negara' => $peserta->negara ?: 'Indonesia',

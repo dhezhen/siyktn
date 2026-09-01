@@ -18,6 +18,7 @@
                         <th scope="col" class="px-5 py-3 font-medium">Hafalan Ziyadah</th>
                         <th scope="col" class="px-5 py-3 font-medium">Rata-rata Skor</th>
                         <th scope="col" class="px-5 py-3 font-medium">Predikat</th>
+                        <th scope="col" class="px-5 py-3 font-medium text-right"><span class="sr-only">Aksi</span></th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 bg-white">
@@ -57,10 +58,15 @@
                                     <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">—</span>
                                 @endif
                             </td>
+                            <td class="px-5 py-3 text-right">
+                                <x-button :href="route('halaqah.syahadah.cetak', $item)" variant="warning" size="sm" icon="printer" external>
+                                    Syahadah
+                                </x-button>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-5 py-8 text-center text-slate-500">
+                            <td colspan="6" class="px-5 py-8 text-center text-slate-500">
                                 <x-icon name="users" class="mx-auto mb-2 size-8 text-slate-300" />
                                 <p>Belum ada santri aktif di halaqah ini.</p>
                             </td>

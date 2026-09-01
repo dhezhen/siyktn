@@ -207,7 +207,52 @@ class HalaqahController extends Controller implements HasMiddleware
             fclose($keluaran);
         }, $namaBerkas);
     }
+    public function cetakSyahadah(AnggotaHalaqah $anggota): View
+    {
+        $halaqah = $anggota->halaqah;
+        $this->pastikanBolehDilihat($halaqah);
 
+        $anggota->load([
+            'pendaftaran.peserta',
+            'halaqah.angkatan',
+            'halaqah.muhaffizh',
+        ])->loadSum(['setoran as ziyadah_halaman' => fn ($q) => $q->where('jenis', 'ziyadah')], 'jumlah_halaman');
+
+        $setorans = $anggota->setoran()->get(['kualitas']);
+        $scoreTotal = 0;
+        $count = 0;
+        foreach ($setorans as $s) {
+            $score = match ($s->kualitas) {
+                'mumtaz' => 4,
+                'jayyid_jiddan' => 3,
+                'jayyid' => 2,
+                default => 0,
+            };
+            if ($score > 0) {
+                $scoreTotal += $score;
+                $count++;
+            }
+        }
+        $anggota->rata_rata_skor = $count > 0 ? $scoreTotal / $count : 0;
+        $anggota->predikat = match (true) {
+            $anggota->rata_rata_skor >= 3.5 => 'Mumtaz',
+            $anggota->rata_rata_skor >= 2.5 => 'Jayyid Jiddan',
+            $anggota->rata_rata_skor > 0 => 'Jayyid',
+            default => '-',
+        };
+        $anggota->predikat_arab = match ($anggota->predikat) {
+            'Mumtaz' => 'مُمْتَاز',
+            'Jayyid Jiddan' => 'جَيِّد جِدًّا',
+            'Jayyid' => 'جَيِّد',
+            default => '-',
+        };
+
+        return view('halaqah.syahadah', [
+            'anggota' => $anggota,
+            'peserta' => $anggota->pendaftaran->peserta,
+            'halaqah' => $halaqah,
+        ]);
+    }
     /**
      * Muhaffizh hanya boleh membuka halaqah asuhannya sendiri.
      */

@@ -58,6 +58,9 @@
                         <div class="grid gap-4 sm:grid-cols-2">
                             <x-input name="nama" label="Nama Lengkap" required :value="old('nama', $peserta->nama)" />
 
+                            <x-input name="nama_arab" label="Nama (Tulisan Arab)" :value="old('nama_arab', $peserta->nama_arab)"
+                                     hint="Ditampilkan di Syahadah." dir="rtl" class="font-arabic" />
+
                             <x-input name="nik" label="NIK" :value="old('nik', $peserta->nik)"
                                      inputmode="numeric" maxlength="16" placeholder="16 digit sesuai KTP/KK"
                                      hint="Dipakai sistem untuk mengenali peserta yang mendaftar lagi." />

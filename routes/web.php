@@ -112,6 +112,8 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
     Route::put('halaqah/anggota/{anggota}/pindah', [HalaqahController::class, 'pindahkan'])->name('halaqah.anggota.pindah');
     Route::delete('halaqah/anggota/{anggota}', [HalaqahController::class, 'keluarkan'])->name('halaqah.anggota.keluar');
     Route::get('halaqah/{halaqah}/laporan', [HalaqahController::class, 'laporan'])->name('halaqah.laporan');
+    Route::get('halaqah/{halaqah}/ekspor-laporan', [HalaqahController::class, 'eksporLaporan'])->name('halaqah.eksporLaporan');
+    Route::get('halaqah/anggota/{anggota}/syahadah', [HalaqahController::class, 'cetakSyahadah'])->name('halaqah.syahadah.cetak');
     Route::get('halaqah/{halaqah}/laporan/ekspor', [HalaqahController::class, 'eksporLaporan'])->name('halaqah.laporan.export');
     Route::resource('halaqah', HalaqahController::class)->parameters(['halaqah' => 'halaqah']);
 

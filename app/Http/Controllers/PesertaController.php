@@ -222,6 +222,7 @@ class PesertaController extends Controller implements HasMiddleware
 
         $data = $request->validate([
             'nama' => ['required', 'string', 'max:100'],
+            'nama_arab' => ['nullable', 'string', 'max:150'],
             'nik' => $aturanNik,
             'email' => ['nullable', 'email', 'max:150'],
             'jenis_kelamin' => ['required', Rule::in(['L', 'P'])],
@@ -245,6 +246,7 @@ class PesertaController extends Controller implements HasMiddleware
             'tanggal_lahir.before' => 'Tanggal lahir harus sebelum hari ini.',
         ], [
             'nama' => 'nama',
+            'nama_arab' => 'nama dalam bahasa arab',
             'nik' => 'NIK',
             'email' => 'email',
             'jenis_kelamin' => 'jenis kelamin',
