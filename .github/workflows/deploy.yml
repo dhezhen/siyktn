@@ -1,0 +1,50 @@
+name: Deploy Laravel to cPanel
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🚚 Checkout Code
+      uses: actions/checkout@v3
+
+    - name: 🛠️ Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, bcmath, pdo_mysql
+        
+    - name: 📦 Install Composer Dependencies
+      run: composer install --no-dev --optimize-autoloader --no-progress
+      
+    - name: 🛠️ Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: 📦 Install NPM and Build
+      run: |
+        npm install
+        npm run build
+        
+    - name: 📂 Sync files to cPanel via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        server-dir: /daftar.hafalquransebulan.com/siyktn/
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          .env
+          .env.example
+          README.md
