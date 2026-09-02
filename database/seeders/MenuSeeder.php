@@ -35,6 +35,10 @@ class MenuSeeder extends Seeder
                 ['title' => 'Setoran Hafalan', 'icon' => 'check-circle', 'type' => 'route', 'route' => 'setoran.index', 'permission' => 'setoran.view'],
             ]],
 
+            ['title' => 'Keuangan', 'icon' => 'currency-dollar', 'type' => 'header', 'children' => [
+                ['title' => 'Rekap Pendaftaran', 'icon' => 'document-text', 'type' => 'route', 'route' => 'keuangan.index', 'permission' => 'keuangan.view'],
+            ]],
+
             ['title' => 'Pengaturan', 'icon' => 'cog', 'type' => 'header', 'children' => [
                 ['title' => 'Menu', 'icon' => 'list', 'type' => 'route', 'route' => 'menu.index', 'permission' => 'menu.view'],
                 ['title' => 'Aplikasi', 'icon' => 'cog', 'type' => 'route', 'route' => 'setting.edit', 'permission' => 'setting.view'],

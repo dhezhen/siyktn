@@ -85,6 +85,11 @@ return [
             'group' => 'Modul Halaqah',
             'actions' => ['view', 'view-all', 'create', 'update', 'delete', 'export'],
         ],
+        'keuangan' => [
+            'label' => 'Keuangan',
+            'group' => 'Keuangan',
+            'actions' => ['view', 'update', 'export'],
+        ],
     ],
 
     /*
@@ -101,6 +106,7 @@ return [
             'permissions' => [
                 'user.*', 'role.view', 'menu.*', 'setting.*', 'activity.view',
                 'angkatan.*', 'peserta.*', 'muhaffizh.*', 'halaqah.*', 'setoran.*',
+                'keuangan.*',
             ],
         ],
         'operator' => [

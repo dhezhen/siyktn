@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HalaqahController;
+use App\Http\Controllers\KeuanganController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\MuhaffizhController;
 use App\Http\Controllers\PendaftaranAdminController;
@@ -136,6 +137,12 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
     Route::post('pendaftaran-masuk/{pendaftaran}/setujui', [PendaftaranAdminController::class, 'setujui'])->name('pendaftaran.setujui');
     Route::post('pendaftaran-masuk/{pendaftaran}/tolak', [PendaftaranAdminController::class, 'tolak'])->name('pendaftaran.tolak');
     Route::get('peserta/{peserta}/ktp', [PendaftaranAdminController::class, 'ktp'])->name('pendaftaran.ktp');
+
+    /*
+     | Keuangan
+     */
+    Route::get('keuangan', [KeuanganController::class, 'index'])->name('keuangan.index');
+    Route::put('keuangan/{keuangan}', [KeuanganController::class, 'update'])->name('keuangan.update');
 
     /*
      | Pengaturan sistem
