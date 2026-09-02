@@ -3,7 +3,7 @@
                    subtitle="Tinjau berkas pendaftaran yang masuk, lalu setujui atau tolak.">
         <x-slot:actions>
             <x-button :href="route('pendaftaran.presensi')" variant="secondary">
-                📷 Verifikasi Kehadiran (Scan QR)
+                Verifikasi Kehadiran (Scan QR)
             </x-button>
             <x-button :href="route('pendaftaran.create')" variant="secondary" icon="eye" target="_blank">
                 Buka Formulir Publik
