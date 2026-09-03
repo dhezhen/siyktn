@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\MembatasiKeMuhaffizh;
+use App\Models\Angkatan;
 use App\Models\AnggotaHalaqah;
 use App\Models\Halaqah;
 use App\Models\Menu;
@@ -25,12 +26,17 @@ class DashboardController extends Controller
 
     public function __invoke(): View
     {
+        $angkatanId = request('angkatan_id');
+        $angkatans = Angkatan::orderByDesc('id')->get(['id', 'nama']);
+
         $viewData = [
-            'stats' => $this->stats(),
+            'stats' => $this->stats($angkatanId),
             'sambutan' => $this->sambutan(),
             'pintasan' => $this->pintasan(),
             'activities' => $this->recentActivities(),
             'grafik' => $this->grafik(),
+            'angkatans' => $angkatans,
+            'selectedAngkatan' => $angkatanId,
         ];
 
         if (Auth::user()->hasAnyRole(['admin', 'super-admin'])) {
@@ -182,7 +188,7 @@ class DashboardController extends Controller
      *
      * @return array<int, array{label: string, value: int|string, icon: string}>
      */
-    protected function stats(): array
+    protected function stats($angkatanId = null): array
     {
         $user = Auth::user();
 
@@ -200,36 +206,43 @@ class DashboardController extends Controller
         $stats = [];
 
         if ($user->can('user.view')) {
-            $stats[] = ['label' => 'Total Pengguna', 'value' => User::count(), 'icon' => 'users'];
-            $stats[] = ['label' => 'Pengguna Aktif', 'value' => User::active()->count(), 'icon' => 'check-circle'];
+            $stats[] = ['label' => 'Total Pengguna', 'value' => User::count(), 'icon' => 'users', 'group' => 'Manajemen Sistem'];
+            $stats[] = ['label' => 'Pengguna Aktif', 'value' => User::active()->count(), 'icon' => 'check-circle', 'group' => 'Manajemen Sistem'];
         }
 
         if ($user->can('role.view')) {
-            $stats[] = ['label' => 'Role', 'value' => Role::count(), 'icon' => 'shield'];
+            $stats[] = ['label' => 'Role', 'value' => Role::count(), 'icon' => 'shield', 'group' => 'Manajemen Sistem'];
         }
 
         if ($user->can('menu.view')) {
-            $stats[] = ['label' => 'Menu Aktif', 'value' => Menu::active()->count(), 'icon' => 'list'];
+            $stats[] = ['label' => 'Menu Aktif', 'value' => Menu::active()->count(), 'icon' => 'list', 'group' => 'Manajemen Sistem'];
         }
 
         if ($user->can('peserta.view')) {
-            $stats[] = ['label' => 'Total Peserta', 'value' => Peserta::count(), 'icon' => 'users'];
+            $value = $angkatanId 
+                ? Peserta::whereHas('pendaftaran', fn($q) => $q->where('angkatan_id', $angkatanId))->count()
+                : Peserta::count();
+            $stats[] = ['label' => 'Total Peserta', 'value' => $value, 'icon' => 'users', 'group' => 'Akademik & Halaqah'];
         }
 
         if ($user->can('peserta.approve')) {
             $stats[] = [
                 'label' => 'Pendaftaran Menunggu',
-                'value' => Pendaftaran::menunggu()->count(),
+                'value' => Pendaftaran::menunggu()->when($angkatanId, fn($q) => $q->where('angkatan_id', $angkatanId))->count(),
                 'icon' => 'warning',
+                'group' => 'Akademik & Halaqah'
             ];
         }
 
         if ($user->can('muhaffizh.view')) {
-            $stats[] = ['label' => 'Muhaffizh Aktif', 'value' => Muhaffizh::aktif()->count(), 'icon' => 'academic'];
+            $value = $angkatanId
+                ? Muhaffizh::aktif()->whereHas('halaqah', fn($q) => $q->where('angkatan_id', $angkatanId))->count()
+                : Muhaffizh::aktif()->count();
+            $stats[] = ['label' => 'Muhaffizh Aktif', 'value' => $value, 'icon' => 'academic', 'group' => 'Akademik & Halaqah'];
         }
 
         if ($user->can('halaqah.view')) {
-            $stats = array_merge($stats, $this->statsSeluruhSistem());
+            $stats = array_merge($stats, $this->statsSeluruhSistem($angkatanId));
         }
 
         return $stats;
@@ -286,14 +299,14 @@ class DashboardController extends Controller
     /**
      * @return array<int, array{label: string, value: int|string, icon: string}>
      */
-    protected function statsSeluruhSistem(): array
+    protected function statsSeluruhSistem($angkatanId = null): array
     {
         return [
-            ['label' => 'Halaqah Berjalan', 'value' => Halaqah::aktif()->count(), 'icon' => 'book'],
+            ['label' => 'Halaqah Berjalan', 'value' => Halaqah::aktif()->when($angkatanId, fn($q) => $q->where('angkatan_id', $angkatanId))->count(), 'icon' => 'book', 'group' => 'Akademik & Halaqah'],
 
             // Angka yang menuntut tindakan: santri aktif yang belum dibagi ke
             // halaqah mana pun.
-            ['label' => 'Santri Belum Berhalaqah', 'value' => Pendaftaran::belumBerhalaqah()->count(), 'icon' => 'warning'],
+            ['label' => 'Santri Belum Berhalaqah', 'value' => Pendaftaran::belumBerhalaqah()->when($angkatanId, fn($q) => $q->where('angkatan_id', $angkatanId))->count(), 'icon' => 'warning', 'group' => 'Akademik & Halaqah'],
         ];
     }
 
@@ -310,8 +323,8 @@ class DashboardController extends Controller
             ->count();
 
         $stats = [
-            ['label' => 'Halaqah Saya', 'value' => (clone $halaqah)->aktif()->count(), 'icon' => 'book'],
-            ['label' => 'Santri Binaan', 'value' => $binaan, 'icon' => 'users'],
+            ['label' => 'Halaqah Saya', 'value' => (clone $halaqah)->aktif()->count(), 'icon' => 'book', 'group' => 'Ringkasan Saya'],
+            ['label' => 'Santri Binaan', 'value' => $binaan, 'icon' => 'users', 'group' => 'Ringkasan Saya'],
         ];
 
         if (Auth::user()->can('setoran.view')) {
@@ -321,8 +334,8 @@ class DashboardController extends Controller
 
             $ziyadah = (float) Setoran::diampuOleh($muhaffizhId)->ziyadah()->sum('jumlah_halaman');
 
-            $stats[] = ['label' => 'Setoran Pekan Ini', 'value' => $pekanIni, 'icon' => 'check-circle'];
-            $stats[] = ['label' => 'Ziyadah Terkumpul', 'value' => Setoran::setaraJuz($ziyadah), 'icon' => 'identification'];
+            $stats[] = ['label' => 'Setoran Pekan Ini', 'value' => $pekanIni, 'icon' => 'check-circle', 'group' => 'Capaian Hafalan'];
+            $stats[] = ['label' => 'Ziyadah Terkumpul', 'value' => Setoran::setaraJuz($ziyadah), 'icon' => 'identification', 'group' => 'Capaian Hafalan'];
         }
 
         return $stats;

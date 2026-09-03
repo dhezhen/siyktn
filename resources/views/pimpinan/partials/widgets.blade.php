@@ -3,49 +3,49 @@
     <!-- 1. KPI Cards (Key Performance Indicators) -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         <!-- Total Pendapatan -->
-        <x-card padding="p-5" class="flex items-center gap-4 border-l-4 border-l-emerald-500">
-            <div class="rounded-full bg-emerald-50 dark:bg-emerald-900/30 p-3 text-emerald-600 dark:text-emerald-400">
-                <x-icon name="currency-dollar" class="h-6 w-6" />
+        <div class="rounded-xl p-5 flex items-center gap-4 bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md shadow-emerald-500/20">
+            <div class="rounded-full bg-white/20 p-4 text-white">
+                <x-icon name="currency-dollar" class="h-8 w-8" />
             </div>
             <div>
-                <p class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Pemasukan Valid</p>
-                <p class="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-0.5">Rp {{ number_format($totalPemasukan, 0, ',', '.') }}</p>
+                <p class="text-sm font-medium text-emerald-50 uppercase tracking-wide">Pemasukan Valid</p>
+                <p class="text-2xl font-bold text-white mt-0.5">Rp {{ number_format($totalPemasukan, 0, ',', '.') }}</p>
             </div>
-        </x-card>
+        </div>
 
         <!-- Total Piutang/Tunggakan -->
-        <x-card padding="p-5" class="flex items-center gap-4 border-l-4 border-l-rose-500">
-            <div class="rounded-full bg-rose-50 dark:bg-rose-900/30 p-3 text-rose-600 dark:text-rose-400">
-                <x-icon name="exclamation-circle" class="h-6 w-6" />
+        <div class="rounded-xl p-5 flex items-center gap-4 bg-gradient-to-br from-rose-500 to-rose-600 shadow-md shadow-rose-500/20">
+            <div class="rounded-full bg-white/20 p-4 text-white">
+                <x-icon name="exclamation-circle" class="h-8 w-8" />
             </div>
             <div>
-                <p class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Total Tunggakan</p>
-                <p class="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-0.5">Rp {{ number_format($totalTunggakan, 0, ',', '.') }}</p>
+                <p class="text-sm font-medium text-rose-50 uppercase tracking-wide">Total Tunggakan</p>
+                <p class="text-2xl font-bold text-white mt-0.5">Rp {{ number_format($totalTunggakan, 0, ',', '.') }}</p>
             </div>
-        </x-card>
+        </div>
 
         <!-- Total Santri -->
-        <x-card padding="p-5" class="flex items-center gap-4 border-l-4 border-l-blue-500">
-            <div class="rounded-full bg-blue-50 dark:bg-blue-900/30 p-3 text-blue-600 dark:text-blue-400">
-                <x-icon name="users" class="h-6 w-6" />
+        <div class="rounded-xl p-5 flex items-center gap-4 bg-gradient-to-br from-blue-500 to-blue-600 shadow-md shadow-blue-500/20">
+            <div class="rounded-full bg-white/20 p-4 text-white">
+                <x-icon name="users" class="h-8 w-8" />
             </div>
             <div>
-                <p class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Total Peserta Aktif</p>
-                <p class="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-0.5">{{ number_format($totalPeserta) }} Santri</p>
+                <p class="text-sm font-medium text-blue-50 uppercase tracking-wide">Total Peserta Aktif</p>
+                <p class="text-2xl font-bold text-white mt-0.5">{{ number_format($totalPeserta) }} Santri</p>
             </div>
-        </x-card>
+        </div>
 
         <!-- Total Halaqah & Muhaffizh -->
-        <x-card padding="p-5" class="flex items-center gap-4 border-l-4 border-l-indigo-500">
-            <div class="rounded-full bg-indigo-50 dark:bg-indigo-900/30 p-3 text-indigo-600 dark:text-indigo-400">
-                <x-icon name="book-open" class="h-6 w-6" />
+        <div class="rounded-xl p-5 flex items-center gap-4 bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-md shadow-indigo-500/20">
+            <div class="rounded-full bg-white/20 p-4 text-white">
+                <x-icon name="book-open" class="h-8 w-8" />
             </div>
             <div>
-                <p class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Halaqah Aktif</p>
-                <p class="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-0.5">{{ number_format($totalHalaqah) }} Kelas</p>
-                <p class="text-xs font-medium text-indigo-600 dark:text-indigo-400 mt-0.5">{{ number_format($totalMuhaffizh) }} Pengajar</p>
+                <p class="text-sm font-medium text-indigo-50 uppercase tracking-wide">Halaqah Aktif</p>
+                <p class="text-2xl font-bold text-white mt-0.5">{{ number_format($totalHalaqah) }} Kelas</p>
+                <p class="text-xs font-medium text-indigo-100 mt-0.5">{{ number_format($totalMuhaffizh) }} Pengajar</p>
             </div>
-        </x-card>
+        </div>
     </div>
 
     <!-- 2. Charts Area -->

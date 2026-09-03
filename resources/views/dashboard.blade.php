@@ -2,19 +2,43 @@
     <x-page-header title="Dashboard" :subtitle="$sambutan" />
 
     @if (filled($stats ?? []))
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            @foreach ($stats as $stat)
-                <x-card padding="p-5">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <p class="text-sm text-slate-500 dark:text-slate-400">{{ $stat['label'] }}</p>
-                            <p class="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">{{ $stat['value'] }}</p>
-                        </div>
-                        <span class="grid size-10 shrink-0 place-items-center rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
-                            <x-icon :name="$stat['icon']" class="size-5" />
-                        </span>
+        @php
+            $groupedStats = collect($stats)->groupBy(fn($item) => $item['group'] ?? 'Statistik');
+        @endphp
+
+        <div class="space-y-6 mb-8">
+            @foreach ($groupedStats as $groupName => $groupItems)
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-lg font-semibold text-slate-800 dark:text-slate-200">{{ $groupName }}</h3>
+                        
+                        @if ($groupName === 'Akademik & Halaqah' && isset($angkatans) && $angkatans->isNotEmpty())
+                            <form method="GET" action="">
+                                <select name="angkatan_id" class="py-1.5 pl-3 pr-8 text-sm border-slate-200 dark:border-slate-700 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 dark:bg-slate-800 dark:text-slate-200" onchange="this.form.submit()">
+                                    <option value="">Semua Angkatan</option>
+                                    @foreach ($angkatans as $angkatan)
+                                        <option value="{{ $angkatan->id }}" @selected(($selectedAngkatan ?? '') == $angkatan->id)>{{ $angkatan->nama }}</option>
+                                    @endforeach
+                                </select>
+                            </form>
+                        @endif
                     </div>
-                </x-card>
+                    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-{{ count($groupItems) >= 4 ? '4' : '3' }}">
+                        @foreach ($groupItems as $stat)
+                            <x-card padding="p-5">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p class="text-sm text-slate-500 dark:text-slate-400">{{ $stat['label'] }}</p>
+                                        <p class="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-100">{{ $stat['value'] }}</p>
+                                    </div>
+                                    <span class="grid size-10 shrink-0 place-items-center rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                                        <x-icon :name="$stat['icon']" class="size-5" />
+                                    </span>
+                                </div>
+                            </x-card>
+                        @endforeach
+                    </div>
+                </div>
             @endforeach
         </div>
     @endif

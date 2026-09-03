@@ -16,15 +16,27 @@ class PimpinanController extends Controller
     public function index(): View
     {
         $this->authorize('pimpinan.view');
-        return view('pimpinan.dashboard', $this->getDashboardData());
+        
+        $data = $this->getDashboardData();
+        $data['angkatans'] = \App\Models\Angkatan::orderByDesc('id')->get(['id', 'nama']);
+        $data['selectedAngkatan'] = request('angkatan_id');
+
+        return view('pimpinan.dashboard', $data);
     }
 
     public function getDashboardData(): array
     {
+        $angkatanId = request('angkatan_id');
+
         // ==========================
         // 1. Pilar Keuangan
         // ==========================
-        $keuangan = DB::table('pendaftaran')
+        $keuanganQuery = DB::table('pendaftaran');
+        if ($angkatanId) {
+            $keuanganQuery->where('angkatan_id', $angkatanId);
+        }
+
+        $keuangan = $keuanganQuery
             ->selectRaw("
                 SUM(biaya_pendaftaran) as total_biaya_pendaftaran,
                 SUM(biaya_program) as total_biaya_program,
@@ -41,15 +53,26 @@ class PimpinanController extends Controller
         // ==========================
         // 2. Pilar Kepesertaan
         // ==========================
-        $totalPeserta = Peserta::count();
-        $genderPeserta = Peserta::select('jenis_kelamin', DB::raw('count(*) as total'))
-            ->groupBy('jenis_kelamin')
-            ->get();
+        $pesertaQuery = Peserta::query();
+        if ($angkatanId) {
+            $pesertaQuery->whereHas('pendaftaran', fn($q) => $q->where('angkatan_id', $angkatanId));
+        }
+        $totalPeserta = $pesertaQuery->count();
+        
+        $genderPesertaQuery = Peserta::select('jenis_kelamin', DB::raw('count(*) as total'))->groupBy('jenis_kelamin');
+        if ($angkatanId) {
+            $genderPesertaQuery->whereHas('pendaftaran', fn($q) => $q->where('angkatan_id', $angkatanId));
+        }
+        $genderPeserta = $genderPesertaQuery->get();
             
         $ikhwan = $genderPeserta->where('jenis_kelamin', 'L')->first()->total ?? 0;
         $akhwat = $genderPeserta->where('jenis_kelamin', 'P')->first()->total ?? 0;
 
-        $pendaftarTerbaru = Pendaftaran::with(['peserta:id,nama,jenis_kelamin', 'angkatan:id,nama'])
+        $pendaftarTerbaruQuery = Pendaftaran::with(['peserta:id,nama,jenis_kelamin', 'angkatan:id,nama']);
+        if ($angkatanId) {
+            $pendaftarTerbaruQuery->where('angkatan_id', $angkatanId);
+        }
+        $pendaftarTerbaru = $pendaftarTerbaruQuery
             ->latest('didaftarkan_pada')
             ->take(20)
             ->get()
@@ -59,15 +82,28 @@ class PimpinanController extends Controller
         // ==========================
         // 3. Pilar Operasional Akademik
         // ==========================
-        $totalHalaqah = Halaqah::count();
-        $totalMuhaffizh = Muhaffizh::count();
+        $halaqahQuery = Halaqah::query();
+        if ($angkatanId) {
+            $halaqahQuery->where('angkatan_id', $angkatanId);
+        }
+        $totalHalaqah = $halaqahQuery->count();
+
+        $muhaffizhQuery = Muhaffizh::query();
+        if ($angkatanId) {
+            $muhaffizhQuery->whereHas('halaqah', fn($q) => $q->where('angkatan_id', $angkatanId));
+        }
+        $totalMuhaffizh = $muhaffizhQuery->count();
         $rataSantriPerGuru = $totalMuhaffizh > 0 ? round($totalPeserta / $totalMuhaffizh, 1) : 0;
 
         // ==========================
         // 4. Progress Harian Peserta
         // ==========================
         // Mengambil setoran hafalan terbaru hari ini atau beberapa hari terakhir
-        $setoranTerbaru = Setoran::with(['anggotaHalaqah.pendaftaran.peserta:id,nama', 'anggotaHalaqah.halaqah.muhaffizh:id,nama'])
+        $setoranTerbaruQuery = Setoran::with(['anggotaHalaqah.pendaftaran.peserta:id,nama', 'anggotaHalaqah.halaqah.muhaffizh:id,nama']);
+        if ($angkatanId) {
+            $setoranTerbaruQuery->whereHas('anggotaHalaqah.halaqah', fn($q) => $q->where('angkatan_id', $angkatanId));
+        }
+        $setoranTerbaru = $setoranTerbaruQuery
             ->latest('tanggal')
             ->latest('created_at')
             ->take(30)
@@ -76,10 +112,14 @@ class PimpinanController extends Controller
             ->take(10);
 
         // Chart Pendaftaran 6 Bulan Terakhir
-        $chartPendaftaran = Pendaftaran::select(
+        $chartPendaftaranQuery = Pendaftaran::select(
                 DB::raw("DATE_FORMAT(didaftarkan_pada, '%Y-%m') as bulan"),
                 DB::raw("COUNT(*) as total")
-            )
+            );
+        if ($angkatanId) {
+            $chartPendaftaranQuery->where('angkatan_id', $angkatanId);
+        }
+        $chartPendaftaran = $chartPendaftaranQuery
             ->groupBy('bulan')
             ->orderBy('bulan', 'desc')
             ->take(6)
@@ -90,29 +130,42 @@ class PimpinanController extends Controller
         // ==========================
         // 5. Demografi Lanjutan (Wilayah & Usia)
         // ==========================
-        $chartWilayah = Peserta::select('tempat_lahir', DB::raw('count(*) as total'))
-            ->whereNotNull('tempat_lahir')
+        $chartWilayahQuery = Peserta::select('tempat_lahir', DB::raw('count(*) as total'))->whereNotNull('tempat_lahir');
+        if ($angkatanId) {
+            $chartWilayahQuery->whereHas('pendaftaran', fn($q) => $q->where('angkatan_id', $angkatanId));
+        }
+        $chartWilayah = $chartWilayahQuery
             ->groupBy('tempat_lahir')
             ->orderByDesc('total')
             ->take(7)
             ->get();
 
         // Mengelompokkan usia
-        $dataUsia = DB::table('peserta')
+        $dataUsiaQuery = DB::table('peserta')
             ->selectRaw('
                 SUM(CASE WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) < 17 THEN 1 ELSE 0 END) as usia_remaja,
                 SUM(CASE WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 17 AND 25 THEN 1 ELSE 0 END) as usia_pemuda,
                 SUM(CASE WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 26 AND 35 THEN 1 ELSE 0 END) as usia_dewasa,
                 SUM(CASE WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) > 35 THEN 1 ELSE 0 END) as usia_tua
-            ')
-            ->first();
+            ');
+        if ($angkatanId) {
+            $dataUsiaQuery->join('pendaftaran', 'peserta.id', '=', 'pendaftaran.peserta_id')
+                          ->where('pendaftaran.angkatan_id', $angkatanId);
+        }
+        $dataUsia = $dataUsiaQuery->first();
 
         // Beban Muhaffizh (Banyaknya santri aktif per pengajar)
-        $bebanMuhaffizh = DB::table('anggota_halaqah')
+        $bebanMuhaffizhQuery = DB::table('anggota_halaqah')
             ->join('halaqah', 'anggota_halaqah.halaqah_id', '=', 'halaqah.id')
             ->join('muhaffizh', 'halaqah.muhaffizh_id', '=', 'muhaffizh.id')
             ->select('muhaffizh.nama', DB::raw('count(anggota_halaqah.id) as total_santri'))
-            ->where('anggota_halaqah.is_aktif', true)
+            ->where('anggota_halaqah.is_aktif', true);
+            
+        if ($angkatanId) {
+            $bebanMuhaffizhQuery->where('halaqah.angkatan_id', $angkatanId);
+        }
+        
+        $bebanMuhaffizh = $bebanMuhaffizhQuery
             ->groupBy('muhaffizh.nama')
             ->orderByDesc('total_santri')
             ->take(10)
