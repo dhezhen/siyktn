@@ -1,8 +1,9 @@
 @props([
     'icon',
-    'label',                 // wajib: sekarang menjadi teks di dalam tombol
+    'label',
     'variant' => 'default',
     'href' => null,
+    'iconOnly' => false,
 ])
 
 @php
@@ -29,5 +30,7 @@
 @endphp
 
 <x-button :href="$href" :icon="$icon" size="sm" :variant="$buttonVariant" title="{{ $label }}" {{ $attributes }}>
-    {{ $shortLabel }}
+    @if(!$iconOnly)
+        {{ $shortLabel }}
+    @endif
 </x-button>

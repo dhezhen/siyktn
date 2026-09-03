@@ -115,7 +115,7 @@
                                             <form method="POST" action="{{ route('user.restore', $user->id) }}">
                                                 @csrf
                                                 <x-icon-button icon="restore" label="Pulihkan pengguna"
-                                                               variant="primary" type="submit" />
+                                                               variant="primary" type="submit" icon-only />
                                             </form>
                                         @endcan
                                     @else
@@ -126,10 +126,10 @@
                                                 :variant="$user->is_active ? 'default' : 'primary'"
                                                 wire:click="toggleActive({{ $user->id }})"
                                                 wire:loading.attr="disabled"
-                                                wire:target="toggleActive({{ $user->id }})" />
+                                                wire:target="toggleActive({{ $user->id }})" icon-only />
 
                                             <x-icon-button icon="pencil" label="Ubah data"
-                                                           :href="route('user.edit', $user)" />
+                                                           :href="route('user.edit', $user)" icon-only />
                                         @endcan
 
                                         @can('user.delete')
