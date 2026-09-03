@@ -16,6 +16,8 @@ class MenuSeeder extends Seeder
         $menus = [
             ['title' => 'Dashboard', 'icon' => 'squares', 'type' => 'route', 'route' => 'dashboard'],
 
+            ['title' => 'Dashboard Pimpinan', 'icon' => 'chart-bar', 'type' => 'route', 'route' => 'pimpinan.index', 'permission' => 'pimpinan.view'],
+
             ['title' => 'Manajemen Pengguna', 'icon' => 'users', 'type' => 'header', 'children' => [
                 ['title' => 'Pengguna', 'icon' => 'users', 'type' => 'route', 'route' => 'user.index', 'permission' => 'user.view'],
                 ['title' => 'Role & Hak Akses', 'icon' => 'shield', 'type' => 'route', 'route' => 'role.index', 'permission' => 'role.view'],

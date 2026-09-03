@@ -57,11 +57,11 @@
             <li class="flex items-center gap-2 text-xs"
                 @pointerenter="aktif = {{ $i }}" @pointerleave="aktif = null">
                 <span class="size-2.5 shrink-0 rounded-sm" style="background-color: {{ $s['warna'] }}"></span>
-                <span class="flex-1 text-slate-600">{{ $s['label'] }}</span>
-                <span class="font-semibold text-slate-800" style="font-variant-numeric: tabular-nums">
+                <span class="flex-1 text-slate-600 dark:text-slate-400">{{ $s['label'] }}</span>
+                <span class="font-semibold text-slate-800 dark:text-slate-200" style="font-variant-numeric: tabular-nums">
                     {{ $s['nilai'] }}
                 </span>
-                <span class="w-10 text-right text-slate-400" style="font-variant-numeric: tabular-nums">
+                <span class="w-10 text-right text-slate-400 dark:text-slate-500" style="font-variant-numeric: tabular-nums">
                     {{ Grafik::angka($s['persen'], 0) }}%
                 </span>
             </li>

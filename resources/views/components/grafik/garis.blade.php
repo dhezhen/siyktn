@@ -114,7 +114,7 @@
     @if (count($siap) > 1)
         <div class="mb-3 flex flex-wrap items-center gap-4">
             @foreach ($siap as $s)
-                <span class="inline-flex items-center gap-2 text-xs text-slate-600">
+                <span class="inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                     <svg width="14" height="4" aria-hidden="true" class="shrink-0">
                         <line x1="0" y1="2" x2="14" y2="2" stroke="{{ $s['warna'] }}" stroke-width="2" stroke-linecap="round" />
                     </svg>
@@ -131,19 +131,19 @@
         {{-- Garis bantu: hairline, tidak putus-putus, sengaja tidak menonjol. --}}
         @foreach ($garisBantu as $g)
             <line x1="{{ $kiri }}" y1="{{ $g['y'] }}" x2="{{ $plotKanan }}" y2="{{ $g['y'] }}"
-                  stroke="{{ $g['warna'] }}" stroke-width="1" />
+                  class="{{ $g['warna'] == Grafik::SUMBU ? 'stroke-slate-300 dark:stroke-slate-700' : 'stroke-slate-200 dark:stroke-slate-800' }}" stroke-width="1" />
             <text x="{{ $kiri - 8 }}" y="{{ $g['y'] + 3.5 }}" text-anchor="end"
-                  font-size="10" fill="{{ Grafik::TINTA_REDUP }}" style="font-variant-numeric: tabular-nums">{{ $g['teks'] }}</text>
+                  font-size="10" class="fill-slate-500 dark:fill-slate-400" style="font-variant-numeric: tabular-nums">{{ $g['teks'] }}</text>
         @endforeach
 
         @foreach ($labelX as $l)
             <text x="{{ $l['x'] }}" y="{{ $tinggi - 10 }}" text-anchor="middle"
-                  font-size="10" fill="{{ Grafik::TINTA_REDUP }}">{{ $l['teks'] }}</text>
+                  font-size="10" class="fill-slate-500 dark:fill-slate-400">{{ $l['teks'] }}</text>
         @endforeach
 
         <template x-if="aktif !== null">
             <line :x1="titik[aktif].x" :x2="titik[aktif].x" y1="{{ $atas }}" y2="{{ $plotBawah }}"
-                  stroke="{{ Grafik::SUMBU }}" stroke-width="1" />
+                  class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1" />
         </template>
 
         @foreach ($siap as $s)
@@ -152,11 +152,11 @@
 
             {{-- Titik ujung: cincin permukaan 2px agar tetap terbaca saat bersilangan. --}}
             <circle cx="{{ $s['xAkhir'] }}" cy="{{ $s['yAkhir'] }}" r="4"
-                    fill="{{ $s['warna'] }}" stroke="{{ Grafik::PERMUKAAN }}" stroke-width="2" />
+                    fill="{{ $s['warna'] }}" stroke="currentColor" stroke-width="2" class="text-white dark:text-slate-900" />
 
             @if ($bolehLabelUjung)
                 <text x="{{ $s['xAkhir'] + 10 }}" y="{{ $s['yAkhir'] + 3.5 }}"
-                      font-size="11" font-weight="600" fill="#334155">{{ $s['nilaiAkhir'] }}</text>
+                      font-size="11" font-weight="600" class="fill-slate-700 dark:fill-slate-300">{{ $s['nilaiAkhir'] }}</text>
             @endif
         @endforeach
 
@@ -165,7 +165,7 @@
             <g>
                 <template x-for="(s, i) in seri" :key="i">
                     <circle :cx="titik[aktif].x" :cy="seriY[i][aktif]" r="4"
-                            :fill="s.warna" stroke="{{ Grafik::PERMUKAAN }}" stroke-width="2" />
+                            :fill="s.warna" stroke="currentColor" stroke-width="2" class="text-white dark:text-slate-900" />
                 </template>
             </g>
         </template>
@@ -188,10 +188,10 @@
 
     {{-- Setiap angka tetap terjangkau tanpa hover. --}}
     <details class="mt-3 text-xs">
-        <summary class="cursor-pointer text-slate-500 hover:text-slate-700">Lihat sebagai tabel</summary>
+        <summary class="cursor-pointer text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">Lihat sebagai tabel</summary>
         <div class="mt-2 overflow-x-auto">
             <table class="w-full text-left">
-                <thead class="text-slate-500">
+                <thead class="text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800">
                     <tr>
                         <th class="py-1 pr-4 font-medium">Periode</th>
                         @foreach ($siap as $s)
@@ -199,7 +199,7 @@
                         @endforeach
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 text-slate-700">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                     @foreach ($titikHover as $baris)
                         <tr>
                             <td class="py-1 pr-4">{{ $baris['label'] }}</td>

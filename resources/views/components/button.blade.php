@@ -9,11 +9,11 @@
 
 @php
     $variants = [
-        'primary'   => 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/20 hover:from-emerald-500 hover:to-teal-500 hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-emerald-600 transition-all',
-        'secondary' => 'bg-white text-slate-700 shadow-sm ring-1 ring-slate-300 hover:bg-slate-50 hover:ring-slate-400 focus-visible:outline-slate-500',
+        'primary'   => 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-md shadow-emerald-600/20 hover:from-emerald-500 hover:to-teal-500 hover:-translate-y-0.5 active:translate-y-0 focus-visible:outline-emerald-600 transition-all dark:shadow-none',
+        'secondary' => 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-sm ring-1 ring-slate-300 dark:ring-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 hover:ring-slate-400 dark:hover:ring-slate-600 focus-visible:outline-slate-500',
         'warning'   => 'bg-amber-500 text-white font-bold shadow-sm hover:bg-amber-600 focus-visible:outline-amber-500 transition-all',
         'danger'    => 'bg-rose-600 text-white shadow-sm hover:bg-rose-700 focus-visible:outline-rose-600',
-        'ghost'     => 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-slate-500',
+        'ghost'     => 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200 focus-visible:outline-slate-500',
     ];
 
     $sizes = [

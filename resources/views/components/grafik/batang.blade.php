@@ -48,19 +48,19 @@
 
         {{-- Garis dasar tunggal: seluruh batang tumbuh dari sini. --}}
         <line x1="{{ $kiri }}" y1="{{ $atas }}" x2="{{ $kiri }}" y2="{{ $tinggi - $atas }}"
-              stroke="{{ Grafik::SUMBU }}" stroke-width="1" />
+              class="stroke-slate-300 dark:stroke-slate-700" stroke-width="1" />
 
         @foreach ($baris as $b)
             {{-- Nama kategori memakai tinta teks, bukan warna data. --}}
             <text x="{{ $kiri - 10 }}" y="{{ $b['yTeks'] }}" text-anchor="end"
-                  font-size="11" fill="#334155">{{ $b['pendek'] }}</text>
+                  font-size="11" class="fill-slate-700 dark:fill-slate-300">{{ $b['pendek'] }}</text>
 
             <path d="{{ $b['jalur'] }}" fill="{{ $warna }}"
                   :opacity="aktif === null || aktif === {{ $b['i'] }} ? 1 : 0.45"
                   style="transition: opacity 120ms" />
 
             <text x="{{ $b['xTeks'] }}" y="{{ $b['yTeks'] }}"
-                  font-size="11" font-weight="600" fill="#334155"
+                  font-size="11" font-weight="600" class="fill-slate-700 dark:fill-slate-300"
                   style="font-variant-numeric: tabular-nums">{{ $b['nilai'] }}</text>
 
             {{-- Sasaran sorot lebih besar daripada batangnya. --}}
@@ -74,17 +74,17 @@
     </svg>
 
     <details class="mt-3 text-xs">
-        <summary class="cursor-pointer text-slate-500 hover:text-slate-700">Lihat sebagai tabel</summary>
+        <summary class="cursor-pointer text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">Lihat sebagai tabel</summary>
         <div class="mt-2 overflow-x-auto">
             <table class="w-full text-left">
-                <thead class="text-slate-500">
+                <thead class="text-slate-500 dark:text-slate-400 border-b border-slate-100 dark:border-slate-800">
                     <tr>
                         <th class="py-1 pr-4 font-medium">Nama</th>
                         <th class="py-1 pr-4 font-medium">{{ Str::ucfirst($satuan) }}</th>
                         <th class="py-1 font-medium">Keterangan</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 text-slate-700">
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                     @foreach ($baris as $b)
                         <tr>
                             <td class="py-1 pr-4">{{ $b['label'] }}</td>

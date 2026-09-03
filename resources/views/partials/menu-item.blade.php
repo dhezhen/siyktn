@@ -13,7 +13,7 @@
         Dibiarkan sebagai label supaya susunan yang pernah diatur manual
         tidak berubah bentuk.
     --}}
-    <p class="px-3 pt-5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-300/70">
+    <p class="px-3 pt-5 pb-1 text-[11px] font-semibold uppercase tracking-wider text-emerald-300/70 dark:text-slate-500">
         {{ $item['title'] }}
     </p>
 
@@ -23,7 +23,7 @@
     <div x-data="{ open: @js($active) }">
         <button type="button" @click="open = ! open"
                 :aria-expanded="open ? 'true' : 'false'"
-                class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition duration-150 ease-out hover:bg-white/5 hover:text-white {{ $active ? 'text-white' : '' }}">
+                class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition duration-150 ease-out hover:bg-white/5 hover:text-white dark:hover:bg-slate-800 dark:hover:text-slate-200 {{ $active ? 'text-white dark:text-slate-200' : '' }}">
             <x-icon :name="$item['icon'] ?? 'dot'" class="size-5 shrink-0" />
             <span class="flex-1 truncate text-left">{{ $item['title'] }}</span>
             <svg class="size-4 shrink-0 transition-transform" x-bind:class="open && 'rotate-180'"
@@ -42,7 +42,7 @@
     <a href="{{ \App\Support\Menu::url($item) }}" target="{{ $item['target'] ?? '_self' }}"
        @if ($active) aria-current="page" @endif
        wire:navigate
-       class="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition duration-150 ease-out {{ $active ? 'bg-emerald-600/15 text-emerald-400' : 'hover:bg-white/5 hover:text-white' }}">
+       class="group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition duration-150 ease-out {{ $active ? 'bg-emerald-600/15 text-emerald-400 dark:bg-emerald-500/10 dark:text-emerald-400' : 'hover:bg-white/5 hover:text-white dark:hover:bg-slate-800 dark:hover:text-slate-200' }}">
         @if ($active)
             <span class="absolute inset-y-1.5 -left-1 w-1 rounded-full bg-emerald-400"></span>
         @endif

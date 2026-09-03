@@ -20,6 +20,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SetoranController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\PimpinanController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -73,6 +74,7 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
 
     Route::redirect('/', '/dashboard');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('pimpinan', [PimpinanController::class, 'index'])->name('pimpinan.index');
 
     Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profil', [ProfileController::class, 'update'])->name('profile.update');

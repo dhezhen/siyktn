@@ -9,6 +9,8 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
+@custom-variant dark (&:is(.dark *));
+
 [x-cloak] {
     display: none !important;
 }

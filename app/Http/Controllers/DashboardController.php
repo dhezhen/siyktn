@@ -25,13 +25,19 @@ class DashboardController extends Controller
 
     public function __invoke(): View
     {
-        return view('dashboard', [
+        $viewData = [
             'stats' => $this->stats(),
             'sambutan' => $this->sambutan(),
             'pintasan' => $this->pintasan(),
             'activities' => $this->recentActivities(),
             'grafik' => $this->grafik(),
-        ]);
+        ];
+
+        if (Auth::user()->hasAnyRole(['admin', 'super-admin'])) {
+            $viewData['pimpinanData'] = app(\App\Http\Controllers\PimpinanController::class)->getDashboardData();
+        }
+
+        return view('dashboard', $viewData);
     }
 
     /**

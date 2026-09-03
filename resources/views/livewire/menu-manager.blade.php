@@ -120,13 +120,74 @@
                     @if (in_array($type, ['route', 'url'], true))
                         <div>
                             <label class="mb-1 block text-sm font-medium text-slate-700">Ikon</label>
-                            <select wire:model="icon"
-                                    class="block w-full rounded-lg border-0 px-3 py-2 text-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-emerald-600">
-                                <option value="">Tanpa ikon</option>
-                                @foreach (['squares' => 'Dashboard', 'users' => 'Pengguna', 'shield' => 'Perisai', 'list' => 'Daftar', 'cog' => 'Roda gigi', 'info' => 'Informasi'] as $value => $label)
-                                    <option value="{{ $value }}">{{ $label }}</option>
-                                @endforeach
-                            </select>
+                            @php
+                                $availableIcons = [
+                                    'squares' => 'Dashboard',
+                                    'users' => 'Users / Peserta',
+                                    'shield' => 'Perisai / Keamanan',
+                                    'list' => 'Daftar',
+                                    'cog' => 'Pengaturan',
+                                    'info' => 'Informasi',
+                                    'book' => 'Buku / Halaqah',
+                                    'academic' => 'Akademik / Guru',
+                                    'document-text' => 'Dokumen / Laporan',
+                                    'check-circle' => 'Selesai / Validasi',
+                                    'key' => 'Akses / Kunci',
+                                    'pencil' => 'Ubah / Edit',
+                                    'plus' => 'Tambah',
+                                    'user-circle' => 'Profil / Akun',
+                                    'map-pin' => 'Lokasi / Wilayah',
+                                    'light-bulb' => 'Bantuan / Ide',
+                                    'identification' => 'Identitas / Kartu',
+                                    'qr-code' => 'QR Code / Pindai',
+                                    'bolt' => 'Petir / Cepat',
+                                ];
+                            @endphp
+                            
+                            <div x-data="{ open: false }" class="relative">
+                                <!-- Trigger Button -->
+                                <button type="button" @click="open = !open" @click.away="open = false"
+                                        class="flex w-full items-center justify-between rounded-lg bg-white px-3 py-2 text-sm border ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-emerald-600">
+                                    <span class="flex items-center gap-2 text-slate-700">
+                                        @if($icon)
+                                            <x-icon name="{{ $icon }}" class="w-5 h-5 text-slate-500" />
+                                            <span>{{ $availableIcons[$icon] ?? $icon }}</span>
+                                        @else
+                                            <span>Tanpa ikon</span>
+                                        @endif
+                                    </span>
+                                    <x-icon name="chevron-down" class="w-4 h-4 text-slate-400" />
+                                </button>
+
+                                <!-- Dropdown Menu -->
+                                <div x-show="open" style="display: none;" 
+                                     x-transition:enter="transition ease-out duration-100"
+                                     x-transition:enter-start="transform opacity-0 scale-95"
+                                     x-transition:enter-end="transform opacity-100 scale-100"
+                                     x-transition:leave="transition ease-in duration-75"
+                                     x-transition:leave-start="transform opacity-100 scale-100"
+                                     x-transition:leave-end="transform opacity-0 scale-95"
+                                     class="absolute z-10 mt-1 w-full max-h-60 overflow-auto rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                    
+                                    <div @click="$wire.set('icon', ''); open = false" 
+                                         class="relative cursor-pointer select-none py-2 pl-3 pr-9 hover:bg-emerald-50 hover:text-emerald-900">
+                                         <span class="block truncate">Tanpa ikon</span>
+                                    </div>
+
+                                    @foreach($availableIcons as $val => $label)
+                                        <div @click="$wire.set('icon', '{{ $val }}'); open = false" 
+                                             class="relative cursor-pointer select-none py-2 pl-3 pr-9 hover:bg-emerald-50 hover:text-emerald-900 flex items-center gap-3">
+                                            <x-icon name="{{ $val }}" class="w-5 h-5 text-slate-500" />
+                                            <span class="block truncate">{{ $label }}</span>
+                                            @if($icon === $val)
+                                                <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-emerald-600">
+                                                    <x-icon name="check" class="w-4 h-4" />
+                                                </span>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
                         </div>
 
                         <div>

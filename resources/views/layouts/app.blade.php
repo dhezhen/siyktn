@@ -11,13 +11,26 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+    <script>
+        function applyTheme() {
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark')
+            } else {
+                document.documentElement.classList.remove('dark')
+            }
+        }
+        
+        applyTheme();
+        
+        document.addEventListener('livewire:navigated', applyTheme);
+    </script>
     @livewireStyles
 </head>
-<body class="h-full bg-slate-100 text-slate-800 antialiased">
+<body class="h-full bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200 antialiased transition-colors duration-200">
 
 <div x-data="{ sidebarOpen: false, desktopSidebarOpen: localStorage.getItem('desktopSidebarOpen') !== 'false' }" 
      x-init="$watch('desktopSidebarOpen', value => localStorage.setItem('desktopSidebarOpen', value))"
-     class="min-h-full bg-slate-100">
+     class="min-h-full bg-slate-100 dark:bg-slate-900 transition-colors duration-200">
 
     <div x-show="sidebarOpen" x-transition.opacity x-cloak
          @click="sidebarOpen = false"

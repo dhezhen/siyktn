@@ -90,6 +90,11 @@ return [
             'group' => 'Keuangan',
             'actions' => ['view', 'update', 'export'],
         ],
+        'pimpinan' => [
+            'label' => 'Dashboard Pimpinan',
+            'group' => 'Pimpinan',
+            'actions' => ['view'],
+        ],
     ],
 
     /*
@@ -134,6 +139,12 @@ return [
             'description' => 'Akses baca terbatas.',
             'permissions' => [
                 'angkatan.view', 'peserta.view',
+            ],
+        ],
+        'pimpinan' => [
+            'description' => 'Dewan Pimpinan/Manajemen. Mengakses data laporan dan metrik.',
+            'permissions' => [
+                'pimpinan.view', 'keuangan.view', 'peserta.view', 'angkatan.view', 'muhaffizh.view'
             ],
         ],
     ],

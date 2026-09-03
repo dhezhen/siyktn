@@ -1,9 +1,9 @@
 @php
     $styles = [
-        'success' => ['icon' => 'check-circle', 'class' => 'border-emerald-200 bg-emerald-50 text-emerald-800', 'iconClass' => 'text-emerald-600'],
-        'error'   => ['icon' => 'x-circle',     'class' => 'border-rose-200 bg-rose-50 text-rose-800',        'iconClass' => 'text-rose-600'],
-        'warning' => ['icon' => 'warning',      'class' => 'border-amber-200 bg-amber-50 text-amber-800',     'iconClass' => 'text-amber-600'],
-        'info'    => ['icon' => 'info',         'class' => 'border-sky-200 bg-sky-50 text-sky-800',           'iconClass' => 'text-sky-600'],
+        'success' => ['icon' => 'check-circle', 'class' => 'border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-200', 'iconClass' => 'text-emerald-600 dark:text-emerald-400'],
+        'error'   => ['icon' => 'x-circle',     'class' => 'border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-900/20 text-rose-800 dark:text-rose-200',        'iconClass' => 'text-rose-600 dark:text-rose-400'],
+        'warning' => ['icon' => 'warning',      'class' => 'border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200',     'iconClass' => 'text-amber-600 dark:text-amber-400'],
+        'info'    => ['icon' => 'info',         'class' => 'border-sky-200 dark:border-sky-900/50 bg-sky-50 dark:bg-sky-900/20 text-sky-800 dark:text-sky-200',           'iconClass' => 'text-sky-600 dark:text-sky-400'],
     ];
 @endphp
 
@@ -37,8 +37,8 @@
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 -translate-y-2"
          x-transition:enter-end="opacity-100 translate-y-0"
-         class="mb-4 flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
-        <x-icon name="x-circle" class="mt-0.5 size-5 shrink-0 text-rose-600" />
+         class="mb-4 flex items-start gap-3 rounded-lg border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-900/20 p-4 text-sm text-rose-800 dark:text-rose-200">
+        <x-icon name="x-circle" class="mt-0.5 size-5 shrink-0 text-rose-600 dark:text-rose-400" />
         <div class="flex-1">
             <p class="font-medium">Periksa kembali isian berikut:</p>
             <ul class="mt-1 list-inside list-disc space-y-0.5 leading-relaxed">
