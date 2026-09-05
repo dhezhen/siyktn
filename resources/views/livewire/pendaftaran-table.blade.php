@@ -1,18 +1,25 @@
 <div x-data="{ zoomImage: null, zoomTitle: '' }">
     {{-- Tab status --}}
     <div class="mb-4 flex flex-wrap gap-2">
-        @foreach ([
-            'menunggu' => ['label' => 'Menunggu Verifikasi', 'aktif' => 'bg-amber-600 text-white'],
-            'disetujui' => ['label' => 'Disetujui', 'aktif' => 'bg-emerald-600 text-white'],
-            'ditolak' => ['label' => 'Ditolak', 'aktif' => 'bg-rose-600 text-white'],
-            '' => ['label' => 'Semua', 'aktif' => 'bg-slate-800 text-white'],
-        ] as $value => $tab)
+        @php
+            $tabs = [
+                'menunggu' => ['label' => 'Menunggu Verifikasi', 'aktif' => 'bg-amber-600 text-white'],
+                'disetujui' => ['label' => 'Disetujui', 'aktif' => 'bg-emerald-600 text-white'],
+                'ditolak' => ['label' => 'Ditolak', 'aktif' => 'bg-rose-600 text-white'],
+                '' => ['label' => 'Semua', 'aktif' => 'bg-slate-800 text-white'],
+            ];
+            
+            if (auth()->user()?->hasRole('super-admin')) {
+                $tabs['sampah'] = ['label' => 'Tong Sampah', 'aktif' => 'bg-slate-900 text-white'];
+            }
+        @endphp
+        @foreach ($tabs as $value => $tab)
             <button type="button" wire:click="pilihStatus('{{ $value }}')"
                     class="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium shadow-sm transition duration-150 ease-out active:scale-[0.97] {{ $status === $value ? $tab['aktif'] : 'bg-white text-slate-600 ring-1 ring-slate-300 hover:bg-slate-50 hover:ring-slate-400' }}">
                 {{ $tab['label'] }}
                 @if ($value !== '')
                     <span class="rounded-full px-1.5 py-0.5 text-xs {{ $status === $value ? 'bg-white/20' : 'bg-slate-100 text-slate-600' }}">
-                        {{ $this->jumlah[$value] }}
+                        {{ $this->jumlah[$value] ?? 0 }}
                     </span>
                 @endif
             </button>
@@ -285,20 +292,40 @@
 
                     {{-- Aksi --}}
                     <div class="flex w-full shrink-0 flex-wrap items-center gap-1.5 sm:w-auto">
-                        <x-icon-button icon="eye" label="Lihat detail peserta"
-                                       :href="route('peserta.show', $orang)" />
-
-                        @if ($orang?->ktp_path)
-                            @can('peserta.view')
-                                <button type="button" @click="showKtp = !showKtp"
-                                        title="Pratinjau Berkas KTP/KK Langsung"
-                                        class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold shadow-sm transition-all bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100">
-                                    <x-icon name="identification" class="size-4 text-emerald-600" />
-                                    <span x-text="showKtp ? 'Tutup KTP/KK' : 'Lihat KTP/KK'"></span>
+                        @if ($status === 'sampah')
+                            @if (auth()->user()?->hasRole('super-admin'))
+                                <button type="button" wire:click="pulihkanPendaftaran({{ $item->id }})" class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold shadow-sm transition-all bg-sky-50 text-sky-800 border border-sky-300 hover:bg-sky-100">
+                                    <x-icon name="arrow-path" class="size-4 text-sky-600" />
+                                    <span>Pulihkan</span>
                                 </button>
-                            @endcan
+                                <button type="button" wire:click="hapusPermanenPendaftaran({{ $item->id }})" wire:confirm="Yakin ingin menghapus permanen data ini? Data tidak dapat dikembalikan." class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold shadow-sm transition-all bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100">
+                                    <x-icon name="trash" class="size-4 text-rose-600" />
+                                    <span>Hapus Permanen</span>
+                                </button>
+                            @endif
                         @else
-                            <x-icon-button icon="identification" label="Tanpa berkas KTP/KK" disabled />
+                            <x-icon-button icon="eye" label="Lihat detail peserta"
+                                           :href="route('peserta.show', $orang)" />
+
+                            @if ($orang?->ktp_path)
+                                @can('peserta.view')
+                                    <button type="button" @click="showKtp = !showKtp"
+                                            title="Pratinjau Berkas KTP/KK Langsung"
+                                            class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold shadow-sm transition-all bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100">
+                                        <x-icon name="identification" class="size-4 text-emerald-600" />
+                                        <span x-text="showKtp ? 'Tutup KTP/KK' : 'Lihat KTP/KK'"></span>
+                                    </button>
+                                @endcan
+                            @else
+                                <x-icon-button icon="identification" label="Tanpa berkas KTP/KK" disabled />
+                            @endif
+                            
+                            @if (auth()->user()?->can('peserta.delete') || $item->status_pendaftaran === 'ditolak')
+                                <button type="button" wire:click="hapusPendaftaran({{ $item->id }})" wire:confirm="Yakin ingin menghapus data ini ke tong sampah?" title="Hapus Data (Soft Delete)" class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold shadow-sm transition-all bg-rose-50 text-rose-800 border border-rose-300 hover:bg-rose-100 ml-auto">
+                                    <x-icon name="trash" class="size-4 text-rose-600" />
+                                    <span>Hapus</span>
+                                </button>
+                            @endif
                         @endif
 
                         @if ($item->isMenunggu())

@@ -168,17 +168,65 @@ class PendaftaranTable extends Component
             ->groupBy('status_pendaftaran')
             ->pluck('total', 'status_pendaftaran');
 
-        return [
+        $jumlah = [
             'menunggu' => (int) ($hitungan['menunggu'] ?? 0),
             'disetujui' => (int) ($hitungan['disetujui'] ?? 0),
             'ditolak' => (int) ($hitungan['ditolak'] ?? 0),
         ];
+
+        if (auth()->user()?->hasRole('super-admin')) {
+            $jumlah['sampah'] = (int) Pendaftaran::onlyTrashed()->count();
+        }
+
+        return $jumlah;
     }
 
     public function pilihStatus(string $status): void
     {
         $this->status = $status;
         $this->resetPage();
+    }
+
+    public function hapusPendaftaran(int $id): void
+    {
+        $pendaftaran = Pendaftaran::find($id);
+
+        if (! $pendaftaran) {
+            return;
+        }
+
+        if (! auth()->user()?->can('peserta.delete') && $pendaftaran->status_pendaftaran !== 'ditolak') {
+            return;
+        }
+
+        $pendaftaran->delete();
+        $this->dispatch('swal', icon: 'success', title: 'Berhasil Dihapus', text: 'Data pendaftaran dipindahkan ke tong sampah.');
+    }
+
+    public function pulihkanPendaftaran(int $id): void
+    {
+        if (! auth()->user()?->hasRole('super-admin')) {
+            return;
+        }
+
+        $pendaftaran = Pendaftaran::onlyTrashed()->find($id);
+        if ($pendaftaran) {
+            $pendaftaran->restore();
+            $this->dispatch('swal', icon: 'success', title: 'Dipulihkan', text: 'Data pendaftaran berhasil dipulihkan.');
+        }
+    }
+
+    public function hapusPermanenPendaftaran(int $id): void
+    {
+        if (! auth()->user()?->hasRole('super-admin')) {
+            return;
+        }
+
+        $pendaftaran = Pendaftaran::onlyTrashed()->find($id);
+        if ($pendaftaran) {
+            $pendaftaran->forceDelete();
+            $this->dispatch('swal', icon: 'success', title: 'Dihapus Permanen', text: 'Data pendaftaran dihapus permanen dan tidak dapat dikembalikan.');
+        }
     }
 
     public function render(): View
@@ -191,7 +239,8 @@ class PendaftaranTable extends Component
                 'angkatan:id,nama,kode',
                 'peninjau:id,name',
             ])
-            ->when($this->status !== '', fn ($q) => $q->where('status_pendaftaran', $this->status))
+            ->when($this->status === 'sampah' && auth()->user()?->hasRole('super-admin'), fn ($q) => $q->onlyTrashed())
+            ->when($this->status !== '' && $this->status !== 'sampah', fn ($q) => $q->where('status_pendaftaran', $this->status))
             ->when($this->search !== '', function ($q) {
                 $term = '%'.$this->search.'%';
                 $q->where(fn ($sub) => $sub
