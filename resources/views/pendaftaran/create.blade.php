@@ -256,18 +256,13 @@
                     <div class="space-y-6 pt-6 border-t border-slate-100">
                         <div class="flex items-center gap-3 border-b border-slate-100 pb-3.5">
                             <span class="grid size-7 place-items-center rounded-xl bg-emerald-600 text-xs font-black text-white shadow-sm">3</span>
-                            <h2 class="font-extrabold text-slate-900 text-sm sm:text-base tracking-wide">ORANG TUA / WALI & DOKUMEN KTP/KK</h2>
+                            <h2 class="font-extrabold text-slate-900 text-sm sm:text-base tracking-wide">DATA ORANG TUA / WALI</h2>
                         </div>
 
                         <div class="grid gap-5 sm:grid-cols-2">
                             <x-input name="nama_wali" id="input_nama_wali" label="Nama Wali" :value="old('nama_wali')" placeholder="Nama lengkap wali" />
                             <x-input name="no_hp_wali" id="input_no_hp_wali" label="Nomor HP Wali" :value="old('no_hp_wali')" placeholder="08xxxxxxxxxx" />
 
-                            <div class="sm:col-span-2">
-                                <x-input name="ktp" type="file" label="Upload Foto KTP / KK"
-                                         accept=".jpg,.jpeg,.png,.pdf"
-                                         hint="Format JPG, PNG, atau PDF. Maksimal 2 MB." />
-                            </div>
                         </div>
                     </div>
                 </div>

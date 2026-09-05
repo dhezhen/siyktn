@@ -150,13 +150,10 @@ class PendaftaranController extends Controller
             'email' => ['required', 'email', 'max:150'],
             'nama_wali' => ['required', 'string', 'max:100'],
             'no_hp_wali' => ['required', 'string', 'max:25'],
-            'ktp' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:2048'],
             'persetujuan' => ['accepted'],
         ], [
             'nik.digits' => 'NIK harus terdiri dari 16 angka sesuai yang tertera di KTP/KK.',
             'angkatan_id.in' => 'Angkatan yang Anda pilih sudah tidak menerima pendaftaran.',
-            'ktp.mimes' => 'Berkas KTP/KK harus berupa gambar (JPG/PNG) atau PDF.',
-            'ktp.max' => 'Ukuran berkas KTP/KK maksimal 2 MB.',
             'tanggal_lahir.before' => 'Tanggal lahir harus sebelum hari ini.',
             'provinsi.required_if' => 'Provinsi wajib dipilih untuk pendaftar WNI.',
             'negara.required_if' => 'Nama Negara asal wajib diisi untuk pendaftar WNA / Luar Negeri.',
@@ -174,7 +171,6 @@ class PendaftaranController extends Controller
             'email' => 'email',
             'nama_wali' => 'nama wali',
             'no_hp_wali' => 'nomor HP wali',
-            'ktp' => 'berkas KTP/KK',
         ]);
 
         $selectedAngkatan = $angkatanTerbuka->firstWhere('id', (int) $data['angkatan_id']);
@@ -203,19 +199,8 @@ class PendaftaranController extends Controller
             ]);
         }
 
-        // Pendaftar baru wajib melampirkan KTP. Pendaftar lama yang KTP-nya
-        // sudah tersimpan boleh melewatinya.
-        if (! $request->hasFile('ktp') && ! $lama?->ktp_path) {
-            throw ValidationException::withMessages([
-                'ktp' => 'Berkas KTP/KK wajib dilampirkan.',
-            ]);
-        }
-
         $dataPeserta = collect($data)
-            ->except(['angkatan_id', 'paket_program', 'ktp', 'persetujuan'])
-            ->put('ktp_path', $request->hasFile('ktp')
-                ? $this->pendaftaran->simpanKtp($request->file('ktp'))
-                : null)
+            ->except(['angkatan_id', 'paket_program', 'persetujuan'])
             ->all();
 
         $pendaftaran = $this->pendaftaran->daftarkan(
