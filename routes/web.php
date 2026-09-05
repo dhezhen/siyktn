@@ -30,6 +30,11 @@ use Illuminate\Support\Facades\Route;
 | Terbuka tanpa login. Pengiriman formulir dibatasi agar tidak bisa dibanjiri
 | kiriman berulang dari satu sumber.
 */
+Route::get('/', function () {
+    return auth()->check() ? redirect('/dashboard') : redirect('/pendaftaran');
+});
+
+
 Route::get('/pendaftaran', [PendaftaranController::class, 'create'])->name('pendaftaran.create');
 Route::post('/pendaftaran', [PendaftaranController::class, 'store'])
     ->middleware('throttle:30,1')
@@ -72,7 +77,6 @@ Route::middleware(['auth', 'active'])->group(function () {
 */
 Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
 
-    Route::redirect('/', '/dashboard');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('pimpinan', [PimpinanController::class, 'index'])->name('pimpinan.index');
 
