@@ -48,7 +48,7 @@
         </div>
     @else
         <!-- Mode Switcher Berbeda Warna (Pendaftar Baru = Emerald | Alumni = Amber Gold) -->
-        <div class="mb-8 mx-auto max-w-md p-1.5 rounded-2xl bg-slate-200/60 grid grid-cols-2 gap-2 text-sm font-semibold shadow-inner">
+        <div class="hidden mb-8 mx-auto max-w-md p-1.5 rounded-2xl bg-slate-200/60 grid-cols-2 gap-2 text-sm font-semibold shadow-inner">
             {{-- Tombol Pendaftar Baru (Emerald Gradient) --}}
             <button type="button" id="tab-baru" onclick="switchMode('baru')"
                     class="rounded-xl py-3 px-4 text-center transition-all duration-200 bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/25 inline-flex items-center justify-center gap-2 font-extrabold cursor-pointer">
