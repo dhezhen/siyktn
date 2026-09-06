@@ -14,7 +14,7 @@ class BackupController extends Controller
     
     public function index(): View
     {
-        $backupName = env('APP_NAME', 'laravel-backup');
+        $backupName = config('backup.backup.name', env('APP_NAME', 'laravel-backup'));
         $disk = Storage::disk($this->diskName);
         $files = $disk->files($backupName);
 
@@ -48,7 +48,7 @@ class BackupController extends Controller
 
     public function download($file_name)
     {
-        $backupName = env('APP_NAME', 'laravel-backup');
+        $backupName = config('backup.backup.name', env('APP_NAME', 'laravel-backup'));
         $file = $backupName . '/' . $file_name;
         $disk = Storage::disk($this->diskName);
 
@@ -61,7 +61,7 @@ class BackupController extends Controller
 
     public function destroy($file_name)
     {
-        $backupName = env('APP_NAME', 'laravel-backup');
+        $backupName = config('backup.backup.name', env('APP_NAME', 'laravel-backup'));
         $file = $backupName . '/' . $file_name;
         $disk = Storage::disk($this->diskName);
 
