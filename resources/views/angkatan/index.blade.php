@@ -73,7 +73,7 @@
                             </td>
 
                             <td class="px-5 py-3">
-                                <div class="flex items-center justify-end gap-0.5">
+                                <div class="flex items-center justify-end gap-2">
                                     <x-icon-button icon="eye" label="Lihat detail angkatan"
                                                    :href="route('angkatan.show', $item)" />
 
