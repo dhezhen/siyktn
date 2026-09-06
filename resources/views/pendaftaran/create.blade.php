@@ -32,7 +32,7 @@
         </h1>
         
         <p class="text-emerald-50/90 text-sm sm:text-base font-medium leading-relaxed max-w-sm relative z-10">
-            Silakan pilih mode pendaftar baru atau alumni, lalu lengkapi formulir pendaftaran di samping untuk bergabung bersama kami.
+            <!-- Silakan pilih mode pendaftar baru atau alumni, lalu lengkapi formulir pendaftaran di samping untuk bergabung bersama kami. -->
         </p>
     </div>
 
