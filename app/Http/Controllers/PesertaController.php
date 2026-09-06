@@ -44,9 +44,39 @@ class PesertaController extends Controller implements HasMiddleware
 
     public function show(Peserta $peserta): View
     {
-        $peserta->load(['pendaftaran.angkatan', 'pendaftaran.peninjau:id,name']);
+        $peserta->load([
+            'pendaftaran.angkatan', 
+            'pendaftaran.peninjau:id,name',
+            'pendaftaran.anggotaHalaqah.setoran',
+        ]);
 
         return view('peserta.show', ['peserta' => $peserta]);
+    }
+
+    public function cetakHafalan(Peserta $peserta): View
+    {
+        $peserta->load([
+            'pendaftaran.anggotaHalaqah.setoran.muhaffizh',
+            'pendaftaran.anggotaHalaqah.setoran.pencatat',
+            'pendaftaran.anggotaHalaqah.halaqah.angkatan',
+        ]);
+
+        $setorans = collect();
+        foreach ($peserta->pendaftaran as $pendaftaran) {
+            foreach ($pendaftaran->anggotaHalaqah as $anggota) {
+                foreach ($anggota->setoran as $setoran) {
+                    $setoran->angkatan_nama = $anggota->halaqah->angkatan->nama ?? '—';
+                    $setorans->push($setoran);
+                }
+            }
+        }
+
+        $setorans = $setorans->sortBy('tanggal');
+
+        return view('peserta.cetak-hafalan', [
+            'peserta' => $peserta,
+            'setorans' => $setorans,
+        ]);
     }
 
     public function create(Request $request): View
@@ -166,18 +196,38 @@ class PesertaController extends Controller implements HasMiddleware
             fputcsv($handle, [
                 'Kode Pendaftaran', 'Nomor Induk', 'Nama', 'NIK', 'Jenis Kelamin', 'Angkatan',
                 'Tempat Lahir', 'Tanggal Lahir', 'Usia', 'No HP', 'Email', 'Nama Wali', 'No HP Wali',
-                'Tanggal Masuk', 'Status', 'Status Pendaftaran', 'Sumber', 'Didaftarkan Pada',
+                'Kewarganegaraan', 'Negara', 'Provinsi', 'Kabupaten/Kota', 'Alamat Lengkap',
+                'Paket Program', 'Biaya Program', 'Status Bayar Program', 'Biaya Registrasi', 'Status Bayar Registrasi',
+                'Tanggal Masuk', 'Tanggal Selesai', 'Status Peserta', 'Status Pendaftaran', 'Sumber', 'Didaftarkan Pada',
+                'Status Kehadiran', 'Waktu Kehadiran',
+                'Halaqah Aktif', 'Muhaffizh',
+                'Total Ziyadah (Halaman)', 'Total Murajaah (Halaman)',
             ]);
 
             // Satu baris per pendaftaran, sehingga alumni yang ikut dua angkatan
             // muncul dua kali — memang begitu yang diharapkan di rekap.
-            Pendaftaran::with(['peserta', 'angkatan:id,nama'])
+            Pendaftaran::with([
+                'peserta', 
+                'angkatan:id,nama', 
+                'program', 
+                'keanggotaanAktif.halaqah.muhaffizh', 
+                'anggotaHalaqah.setoran'
+            ])
                 ->when($angkatanId, fn ($q) => $q->where('angkatan_id', $angkatanId))
                 ->orderBy('angkatan_id')
                 ->orderBy('nomor_induk')
                 ->chunk(500, function ($rows) use ($handle) {
                     foreach ($rows as $daftar) {
                         $peserta = $daftar->peserta;
+
+                        $ziyadah = 0;
+                        $murajaah = 0;
+                        foreach ($daftar->anggotaHalaqah as $anggota) {
+                            $ziyadah += $anggota->setoran->where('jenis', 'ziyadah')->sum('jumlah_halaman');
+                            $murajaah += $anggota->setoran->where('jenis', 'murajaah')->sum('jumlah_halaman');
+                        }
+                        
+                        $halaqahAktif = $daftar->keanggotaanAktif?->halaqah;
 
                         fputcsv($handle, [
                             $daftar->kode_pendaftaran,
@@ -193,11 +243,28 @@ class PesertaController extends Controller implements HasMiddleware
                             $peserta?->email,
                             $peserta?->nama_wali,
                             $peserta?->no_hp_wali,
+                            $peserta?->kewarganegaraan,
+                            $peserta?->negara,
+                            $peserta?->provinsi,
+                            $peserta?->kabupaten_kota,
+                            $peserta?->alamat,
+                            $daftar->paket_program_label,
+                            $daftar->biaya_program,
+                            $daftar->status_pembayaran_program,
+                            $daftar->biaya_pendaftaran,
+                            $daftar->status_pembayaran_pendaftaran,
                             $daftar->tanggal_masuk?->format('Y-m-d'),
-                            $daftar->status,
-                            $daftar->status_pendaftaran,
+                            $daftar->tanggal_selesai?->format('Y-m-d'),
+                            $daftar->status_label ?? $daftar->status,
+                            $daftar->status_pendaftaran_label ?? $daftar->status_pendaftaran,
                             $daftar->sumber_pendaftaran,
                             $daftar->didaftarkan_pada?->format('Y-m-d H:i'),
+                            $daftar->status_kehadiran,
+                            $daftar->waktu_kehadiran?->format('Y-m-d H:i'),
+                            $halaqahAktif?->nama,
+                            $halaqahAktif?->muhaffizh?->nama,
+                            $ziyadah,
+                            $murajaah,
                         ]);
                     }
                 });

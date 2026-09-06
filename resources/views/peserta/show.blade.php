@@ -154,6 +154,47 @@
                         </table>
                     </div>
                 </x-card>
+
+                {{-- Riwayat Hafalan (Ringkasan) --}}
+                <x-card padding="p-0" title="Riwayat Setoran Hafalan" subtitle="Total capaian hafalan dari seluruh angkatan.">
+                    <?php
+                        $totalZiyadah = 0;
+                        $totalMurajaah = 0;
+                        $hasSetoran = false;
+                        foreach ($peserta->pendaftaran as $daftar) {
+                            foreach ($daftar->anggotaHalaqah as $anggota) {
+                                $ziyadah = $anggota->setoran->where('jenis', 'ziyadah')->sum('jumlah_halaman');
+                                $murajaah = $anggota->setoran->where('jenis', 'murajaah')->sum('jumlah_halaman');
+                                $totalZiyadah += $ziyadah;
+                                $totalMurajaah += $murajaah;
+                                if ($anggota->setoran->isNotEmpty()) {
+                                    $hasSetoran = true;
+                                }
+                            }
+                        }
+                    ?>
+
+                    <div class="p-5">
+                        <div class="grid grid-cols-2 gap-4 rounded-xl border border-slate-100 bg-slate-50/50 p-5">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total Ziyadah</p>
+                                <p class="mt-1 text-2xl font-black text-emerald-600">{{ rtrim(rtrim(number_format($totalZiyadah, 1, ',', '.'), '0'), ',') }} <span class="text-sm font-medium text-slate-500">Halaman</span></p>
+                                <p class="mt-1 text-xs text-slate-500">Setara dengan {{ \App\Models\Setoran::setaraJuz($totalZiyadah) }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Total Murajaah</p>
+                                <p class="mt-1 text-2xl font-black text-sky-600">{{ rtrim(rtrim(number_format($totalMurajaah, 1, ',', '.'), '0'), ',') }} <span class="text-sm font-medium text-slate-500">Halaman</span></p>
+                                <p class="mt-1 text-xs text-slate-500">Setara dengan {{ \App\Models\Setoran::setaraJuz($totalMurajaah) }}</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 flex justify-end">
+                            <x-button :href="route('peserta.cetak-hafalan', $peserta)" variant="secondary" icon="printer" target="_blank" :disabled="!$hasSetoran">
+                                Cetak Riwayat Lengkap
+                            </x-button>
+                        </div>
+                    </div>
+                </x-card>
             </div>
 
             <div class="space-y-4">

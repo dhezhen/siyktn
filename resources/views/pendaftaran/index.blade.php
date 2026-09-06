@@ -2,6 +2,9 @@
     <x-page-header title="Pendaftaran Peserta"
                    subtitle="Tinjau berkas pendaftaran yang masuk, lalu setujui atau tolak.">
         <x-slot:actions>
+            @can('peserta.export')
+                <x-button :href="route('peserta.export')" variant="secondary" icon="download">Ekspor CSV</x-button>
+            @endcan
             <x-button :href="route('pendaftaran.presensi')" variant="secondary">
                 Verifikasi Kehadiran (Scan QR)
             </x-button>

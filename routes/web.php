@@ -104,6 +104,7 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
     Route::resource('program', ProgramController::class)->except(['show']);
 
     Route::get('peserta/ekspor', [PesertaController::class, 'export'])->name('peserta.export');
+    Route::get('peserta/{peserta}/cetak-hafalan', [PesertaController::class, 'cetakHafalan'])->name('peserta.cetak-hafalan');
     Route::resource('peserta', PesertaController::class)->parameters(['peserta' => 'peserta']);
 
     Route::get('muhaffizh/ekspor', [MuhaffizhController::class, 'export'])->name('muhaffizh.export');
