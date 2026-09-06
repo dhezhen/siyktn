@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HalaqahController;
 use App\Http\Controllers\KeuanganController;
@@ -158,6 +159,9 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
 
     Route::get('pengaturan', [SettingController::class, 'edit'])->name('setting.edit');
     Route::put('pengaturan', [SettingController::class, 'update'])->name('setting.update');
+
+    Route::post('pengaturan/backup', [BackupController::class, 'create'])->name('backup.create');
+    Route::get('pengaturan/backup/download', [BackupController::class, 'download'])->name('backup.download');
 
     Route::get('log-aktivitas', [ActivityController::class, 'index'])->name('activity.index');
 });

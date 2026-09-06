@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AkunBaruDibuat;
 use App\Models\Muhaffizh;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -10,6 +11,7 @@ use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -208,9 +210,14 @@ class MuhaffizhController extends Controller implements HasMiddleware
             return $user;
         });
 
-        return back()->with('success', 'Akun untuk '.$muhaffizh->nama.' dibuat. Username: '.$user->username.
-            ' · Kata sandi sementara: '.$sandi.' — catat sekarang, tidak ditampilkan lagi. '.
-            'Kata sandi wajib diganti saat login pertama.');
+        Mail::to($user->email)->send(new AkunBaruDibuat(
+            name: $user->name,
+            username: $user->username,
+            password: $sandi,
+        ));
+
+        return back()->with('success', 'Akun untuk '.$muhaffizh->nama.' telah dibuat. '.
+            'Username dan kata sandi sementara telah dikirimkan ke email '.$user->email.'.');
     }
 
     /**

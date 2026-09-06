@@ -57,4 +57,24 @@
             </div>
         @endcan
     </form>
+
+    @can('setting.update')
+        <div class="mt-8 border-t border-slate-200 pt-8 dark:border-slate-700">
+            <x-card title="Pencadangan Sistem (Backup)">
+                <p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
+                    Lakukan pencadangan seluruh data sistem, termasuk data pengguna, peserta, nilai, pengaturan, dan file unggahan. Fitur ini menggunakan Spatie Laravel Backup.
+                </p>
+                <div class="flex flex-wrap items-center gap-4">
+                    <form action="{{ route('backup.create') }}" method="POST">
+                        @csrf
+                        <x-button type="submit" icon="cloud-arrow-up">Buat Backup Baru</x-button>
+                    </form>
+
+                    <x-button :href="route('backup.download')" variant="secondary" icon="cloud-arrow-down">
+                        Unduh Backup Terakhir
+                    </x-button>
+                </div>
+            </x-card>
+        </div>
+    @endcan
 </x-layouts::app>
