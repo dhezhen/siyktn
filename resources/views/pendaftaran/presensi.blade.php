@@ -364,7 +364,6 @@
     </div>
 
     <!-- Pustaka Camera QR Code Scanner -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
         let html5QrCode = null;
         let isCameraActive = false;
