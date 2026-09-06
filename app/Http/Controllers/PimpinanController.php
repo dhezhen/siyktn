@@ -53,13 +53,15 @@ class PimpinanController extends Controller
         // ==========================
         // 2. Pilar Kepesertaan
         // ==========================
-        $pesertaQuery = Peserta::query();
+        $pesertaQuery = Peserta::whereHas('pendaftaran', fn($q) => $q->where('status_pendaftaran', 'disetujui'));
         if ($angkatanId) {
             $pesertaQuery->whereHas('pendaftaran', fn($q) => $q->where('angkatan_id', $angkatanId));
         }
         $totalPeserta = $pesertaQuery->count();
         
-        $genderPesertaQuery = Peserta::select('jenis_kelamin', DB::raw('count(*) as total'))->groupBy('jenis_kelamin');
+        $genderPesertaQuery = Peserta::select('jenis_kelamin', DB::raw('count(*) as total'))
+            ->whereHas('pendaftaran', fn($q) => $q->where('status_pendaftaran', 'disetujui'))
+            ->groupBy('jenis_kelamin');
         if ($angkatanId) {
             $genderPesertaQuery->whereHas('pendaftaran', fn($q) => $q->where('angkatan_id', $angkatanId));
         }
@@ -68,7 +70,8 @@ class PimpinanController extends Controller
         $ikhwan = $genderPeserta->where('jenis_kelamin', 'L')->first()->total ?? 0;
         $akhwat = $genderPeserta->where('jenis_kelamin', 'P')->first()->total ?? 0;
 
-        $pendaftarTerbaruQuery = Pendaftaran::with(['peserta:id,nama,jenis_kelamin', 'angkatan:id,nama']);
+        $pendaftarTerbaruQuery = Pendaftaran::with(['peserta:id,nama,jenis_kelamin', 'angkatan:id,nama'])
+            ->whereHas('peserta');
         if ($angkatanId) {
             $pendaftarTerbaruQuery->where('angkatan_id', $angkatanId);
         }
@@ -130,7 +133,8 @@ class PimpinanController extends Controller
         // ==========================
         // 5. Demografi Lanjutan (Wilayah & Usia)
         // ==========================
-        $chartWilayahQuery = Peserta::select('tempat_lahir', DB::raw('count(*) as total'))->whereNotNull('tempat_lahir');
+        $chartWilayahQuery = Peserta::select('tempat_lahir', DB::raw('count(*) as total'))->whereNotNull('tempat_lahir')
+            ->whereHas('pendaftaran', fn($q) => $q->where('status_pendaftaran', 'disetujui'));
         if ($angkatanId) {
             $chartWilayahQuery->whereHas('pendaftaran', fn($q) => $q->where('angkatan_id', $angkatanId));
         }
@@ -142,6 +146,10 @@ class PimpinanController extends Controller
 
         // Mengelompokkan usia
         $dataUsiaQuery = DB::table('peserta')
+            ->join('pendaftaran', 'peserta.id', '=', 'pendaftaran.peserta_id')
+            ->where('pendaftaran.status_pendaftaran', 'disetujui')
+            ->whereNull('peserta.deleted_at')
+            ->whereNull('pendaftaran.deleted_at')
             ->selectRaw('
                 SUM(CASE WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) < 17 THEN 1 ELSE 0 END) as usia_remaja,
                 SUM(CASE WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) BETWEEN 17 AND 25 THEN 1 ELSE 0 END) as usia_pemuda,
@@ -149,8 +157,7 @@ class PimpinanController extends Controller
                 SUM(CASE WHEN TIMESTAMPDIFF(YEAR, tanggal_lahir, CURDATE()) > 35 THEN 1 ELSE 0 END) as usia_tua
             ');
         if ($angkatanId) {
-            $dataUsiaQuery->join('pendaftaran', 'peserta.id', '=', 'pendaftaran.peserta_id')
-                          ->where('pendaftaran.angkatan_id', $angkatanId);
+            $dataUsiaQuery->where('pendaftaran.angkatan_id', $angkatanId);
         }
         $dataUsia = $dataUsiaQuery->first();
 
