@@ -45,6 +45,7 @@ class MenuSeeder extends Seeder
                 ['title' => 'Menu', 'icon' => 'list', 'type' => 'route', 'route' => 'menu.index', 'permission' => 'menu.view'],
                 ['title' => 'Aplikasi', 'icon' => 'cog', 'type' => 'route', 'route' => 'setting.edit', 'permission' => 'setting.view'],
                 ['title' => 'Log Aktivitas', 'icon' => 'info', 'type' => 'route', 'route' => 'activity.index', 'permission' => 'activity.view'],
+                ['title' => 'Backup & Restore', 'icon' => 'cloud', 'type' => 'route', 'route' => 'backup.index', 'permission' => 'setting.update'],
             ]],
         ];
 

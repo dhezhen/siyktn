@@ -160,8 +160,10 @@ Route::middleware(['auth', 'active', 'password.changed'])->group(function () {
     Route::get('pengaturan', [SettingController::class, 'edit'])->name('setting.edit');
     Route::put('pengaturan', [SettingController::class, 'update'])->name('setting.update');
 
-    Route::post('pengaturan/backup', [BackupController::class, 'create'])->name('backup.create');
-    Route::get('pengaturan/backup/download', [BackupController::class, 'download'])->name('backup.download');
+    Route::get('backup', [BackupController::class, 'index'])->name('backup.index');
+    Route::post('backup', [BackupController::class, 'create'])->name('backup.create');
+    Route::get('backup/{file_name}/download', [BackupController::class, 'download'])->name('backup.download');
+    Route::delete('backup/{file_name}', [BackupController::class, 'destroy'])->name('backup.destroy');
 
     Route::get('log-aktivitas', [ActivityController::class, 'index'])->name('activity.index');
 });

@@ -219,9 +219,10 @@ class DashboardController extends Controller
         }
 
         if ($user->can('peserta.view')) {
+            $baseQuery = Peserta::whereHas('pendaftaran', fn($q) => $q->where('status_pendaftaran', 'disetujui'));
             $value = $angkatanId 
-                ? Peserta::whereHas('pendaftaran', fn($q) => $q->where('angkatan_id', $angkatanId))->count()
-                : Peserta::count();
+                ? (clone $baseQuery)->whereHas('pendaftaran', fn($q) => $q->where('angkatan_id', $angkatanId))->count()
+                : $baseQuery->count();
             $stats[] = ['label' => 'Total Peserta', 'value' => $value, 'icon' => 'users', 'group' => 'Akademik & Halaqah'];
         }
 
