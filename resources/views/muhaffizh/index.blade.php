@@ -87,7 +87,7 @@
                             </td>
 
                             <td class="px-5 py-3">
-                                <div class="flex items-center justify-end gap-">
+                                <div class="flex items-center justify-end gap-2">
                                     <x-icon-button icon="eye" label="Lihat detail muhaffizh"
                                                    :href="route('muhaffizh.show', $item)" />
 
@@ -99,7 +99,7 @@
                                     @can('muhaffizh.delete')
                                         <x-confirm-delete :action="route('muhaffizh.destroy', $item)" icon-only
                                             label="Hapus muhaffizh"
-                                            :title="' '.$item->nama.'?'"
+                                            :title="'Hapus '.$item->nama.'?'"
                                             message="Muhaffizh yang sudah pernah mengampu halaqah tidak dapat dihapus — nonaktifkan saja." />
                                     @endcan
                                 </div>
