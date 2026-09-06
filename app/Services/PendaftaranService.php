@@ -190,25 +190,12 @@ class PendaftaranService
 
         $this->kirimKePendaftar($pendaftaran, new PendaftaranDiterima($pendaftaran));
 
-        $peninjau = $this->peninjau();
-
-        if ($peninjau->isNotEmpty()) {
-            $this->kirim(
-                fn () => Notification::send($peninjau, new PendaftaranBaruMasuk($pendaftaran)),
-                'peninjau pendaftaran'
-            );
-        }
-
-        // Salinan ke email resmi lembaga, bila diisi di Pengaturan Aplikasi.
-        $emailLembaga = setting('email');
-
-        if ($emailLembaga) {
-            $this->kirim(
-                fn () => Notification::route('mail', $emailLembaga)
-                    ->notify(new PendaftaranBaruMasuk($pendaftaran)),
-                'email lembaga'
-            );
-        }
+        // Kirim notifikasi admin ke satu email operator saja sesuai permintaan
+        $this->kirim(
+            fn () => Notification::route('mail', 'hafalquransebulan@gmail.com')
+                ->notify(new PendaftaranBaruMasuk($pendaftaran)),
+            'operator hafalquransebulan@gmail.com'
+        );
     }
 
     protected function kirimKePendaftar(Pendaftaran $pendaftaran, $notification): void
@@ -239,25 +226,4 @@ class PendaftaranService
         }
     }
 
-    /**
-     * Petugas yang berhak meninjau pendaftaran: pemilik permission
-     * peserta.approve, ditambah seluruh super admin.
-     *
-     * @return Collection<int, User>
-     */
-    protected function peninjau(): Collection
-    {
-        $superAdmin = config('permission.super_admin_role');
-
-        return User::query()
-            ->active()
-            ->whereNotNull('email')
-            ->where(function ($query) use ($superAdmin) {
-                $query
-                    ->whereHas('roles', fn ($r) => $r->where('name', $superAdmin))
-                    ->orWhereHas('permissions', fn ($p) => $p->where('name', self::PERMISSION_PENINJAU))
-                    ->orWhereHas('roles.permissions', fn ($p) => $p->where('name', self::PERMISSION_PENINJAU));
-            })
-            ->get();
-    }
 }
